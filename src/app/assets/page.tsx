@@ -17,6 +17,7 @@ import {
   Trash2,
   Eye
 } from 'lucide-react';
+import { usePersistentData } from '@/lib/usePersistentData';
 
 interface Asset {
   id: string;
@@ -99,7 +100,7 @@ const initialAssets: Asset[] = [
 ];
 
 export default function AssetsPage() {
-  const [assets, setAssets] = useState<Asset[]>(initialAssets);
+  const { data: assets, addItem, updateItem, deleteItem } = usePersistentData<Asset>('assets', initialAssets);
   const [filterType, setFilterType] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
@@ -109,6 +110,7 @@ export default function AssetsPage() {
   // Upload state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [assetType, setAssetType] = useState<Asset['asset_type']>('photo');
+  const [folderId, setFolderId] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -132,6 +134,9 @@ export default function AssetsPage() {
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
+      if (folderId.trim()) {
+        formData.append('folderId', folderId.trim());
+      }
 
       const res = await fetch('/api/upload', {
         method: 'POST',
@@ -165,7 +170,7 @@ export default function AssetsPage() {
         uploaded_at: new Date().toISOString().split('T')[0],
       };
 
-      setAssets([newAsset, ...assets]);
+      addItem(newAsset);
       setIsModalOpen(false);
       setSelectedFile(null);
     } catch (err: any) {
@@ -179,13 +184,13 @@ export default function AssetsPage() {
     e.preventDefault();
     if (!editingAsset) return;
 
-    setAssets(assets.map(a => a.id === editingAsset.id ? editingAsset : a));
+    updateItem(editingAsset.id, editingAsset);
     setEditingAsset(null);
   };
 
   const handleDelete = (id: string, name: string) => {
     if (confirm(`Hapus berkas "${name}"?`)) {
-      setAssets(assets.filter(a => a.id !== id));
+      deleteItem(id);
     }
   };
 
@@ -484,6 +489,20 @@ export default function AssetsPage() {
                     <option value="video">Rekaman Video & Motion</option>
                     <option value="template">Master Template Desain</option>
                   </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">ID Folder Google Drive Target (Opsional)</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: 1B2c3D4e5F6g7H8i9J0kL..."
+                    className="form-input"
+                    value={folderId}
+                    onChange={(e) => setFolderId(e.target.value)}
+                  />
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                    Jika dikosongkan, file akan masuk ke root drive atau folder shared bawaan sistem.
+                  </span>
                 </div>
               </div>
 

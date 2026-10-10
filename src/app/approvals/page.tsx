@@ -14,6 +14,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { usePersistentData } from '@/lib/usePersistentData';
 
 interface ApprovalItem {
   id: string;
@@ -96,7 +97,7 @@ const SAMPLE_APPROVALS: ApprovalItem[] = [
 
 export default function ApprovalsPage() {
   const { currentUser } = useAuth();
-  const [approvals, setApprovals] = useState<ApprovalItem[]>(SAMPLE_APPROVALS);
+  const { data: approvals, updateItem, deleteItem, addItem } = usePersistentData<ApprovalItem>('approvals', SAMPLE_APPROVALS);
   const [activeItem, setActiveItem] = useState<ApprovalItem | null>(null);
   const [feedbackNote, setFeedbackNote] = useState('');
   
@@ -105,16 +106,11 @@ export default function ApprovalsPage() {
   const [previewImage, setPreviewImage] = useState<ApprovalItem | null>(null);
 
   const handleDecision = (id: string, newStatus: ApprovalItem['status']) => {
-    setApprovals(approvals.map(a => 
-      a.id === id 
-        ? { 
-            ...a, 
-            status: newStatus, 
-            reviewer: `${currentUser.name} (${currentUser.role})`,
-            notes: feedbackNote || (newStatus === 'approved' ? 'Disetujui tanpa catatan khusus.' : 'Perlu revisi sesuai catatan review tim.')
-          }
-        : a
-    ));
+    updateItem(id, {
+      status: newStatus,
+      reviewer: `${currentUser.name} (${currentUser.role})`,
+      notes: feedbackNote || (newStatus === 'approved' ? 'Disetujui tanpa catatan khusus.' : 'Perlu revisi sesuai catatan review tim.')
+    });
     setActiveItem(null);
     setFeedbackNote('');
   };
@@ -123,13 +119,13 @@ export default function ApprovalsPage() {
     e.preventDefault();
     if (!editingItem) return;
 
-    setApprovals(approvals.map(a => a.id === editingItem.id ? editingItem : a));
+    updateItem(editingItem.id, editingItem);
     setEditingItem(null);
   };
 
   const handleDelete = (id: string) => {
     if (confirm('Yakin ingin menghapus berkas review ini?')) {
-      setApprovals(approvals.filter(a => a.id !== id));
+      deleteItem(id);
     }
   };
 

@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, CheckSquare, Clock, User, AlertCircle, X, Edit3, Trash2 } from 'lucide-react';
+import { Plus, CheckSquare, Clock, User, AlertCircle, X, Edit3, Trash2, ExternalLink } from 'lucide-react';
+import { usePersistentData } from '@/lib/usePersistentData';
+import DriveImageUploader from '@/components/common/DriveImageUploader';
 
 interface Task {
   id: string;
@@ -12,6 +14,7 @@ interface Task {
   priority: 'low' | 'medium' | 'high' | 'urgent';
   due_date: string;
   assignee: string;
+  image_url?: string;
 }
 
 const initialTasks: Task[] = [
@@ -75,7 +78,7 @@ const COLUMNS: { key: Task['status']; label: string }[] = [
 ];
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const { data: tasks, addItem, updateItem, deleteItem } = usePersistentData<Task>('tasks', initialTasks);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
@@ -87,10 +90,11 @@ export default function TasksPage() {
     priority: 'medium' as any,
     due_date: '',
     assignee: 'Budi Wicaksono',
+    image_url: '',
   });
 
   const moveStatus = (id: string, nextStatus: Task['status']) => {
-    setTasks(tasks.map(t => t.id === id ? { ...t, status: nextStatus } : t));
+    updateItem(id, { status: nextStatus });
   };
 
   const handleCreateOrUpdate = (e: React.FormEvent) => {
@@ -98,16 +102,16 @@ export default function TasksPage() {
     if (!form.title.trim()) return;
 
     if (editingTask) {
-      setTasks(tasks.map(t => t.id === editingTask.id ? {
-        ...t,
+      updateItem(editingTask.id, {
         title: form.title,
         description: form.description,
         project: form.project,
         status: form.status,
         priority: form.priority,
-        due_date: form.due_date || t.due_date,
+        due_date: form.due_date || editingTask.due_date,
         assignee: form.assignee,
-      } : t));
+        image_url: form.image_url,
+      });
       setEditingTask(null);
     } else {
       const newTask: Task = {
@@ -119,8 +123,9 @@ export default function TasksPage() {
         priority: form.priority,
         due_date: form.due_date || '2026-03-15',
         assignee: form.assignee,
+        image_url: form.image_url,
       };
-      setTasks([...tasks, newTask]);
+      addItem(newTask);
     }
 
     setIsModalOpen(false);
@@ -137,13 +142,14 @@ export default function TasksPage() {
       priority: t.priority,
       due_date: t.due_date,
       assignee: t.assignee,
+      image_url: t.image_url || '',
     });
     setIsModalOpen(true);
   };
 
   const handleDelete = (id: string, title: string) => {
     if (confirm(`Hapus tugas "${title}"?`)) {
-      setTasks(tasks.filter(t => t.id !== id));
+      deleteItem(id);
     }
   };
 
@@ -156,6 +162,7 @@ export default function TasksPage() {
       priority: 'medium',
       due_date: '',
       assignee: 'Budi Wicaksono',
+      image_url: '',
     });
   };
 
@@ -225,6 +232,12 @@ export default function TasksPage() {
                   <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.3 }}>
                     {t.title}
                   </h4>
+
+                  {t.image_url && (
+                    <div style={{ margin: '6px 0', borderRadius: '4px', overflow: 'hidden', maxHeight: '110px', backgroundColor: '#f1f5f9' }}>
+                      <img src={t.image_url} alt={t.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                  )}
 
                   <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
                     {t.description}
@@ -367,6 +380,12 @@ export default function TasksPage() {
                     />
                   </div>
                 </div>
+
+                <DriveImageUploader
+                  label="Upload File Deliverable / Hasil Kerja (Google Drive)"
+                  currentImageUrl={form.image_url}
+                  onImageUploaded={(url) => setForm({ ...form, image_url: url })}
+                />
               </div>
 
               <div className="modal-footer">

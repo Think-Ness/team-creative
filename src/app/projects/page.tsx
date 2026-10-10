@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, FolderOpen, Calendar, User, Edit3, Trash2, X } from 'lucide-react';
+import { Plus, FolderOpen, Calendar, User, Edit3, Trash2, X, ExternalLink } from 'lucide-react';
+import { usePersistentData } from '@/lib/usePersistentData';
+import DriveImageUploader from '@/components/common/DriveImageUploader';
 
 interface Project {
   id: string;
@@ -16,6 +18,7 @@ interface Project {
   unit: string;
   pm: string;
   progress: number;
+  image_url?: string;
 }
 
 const initialProjects: Project[] = [
@@ -64,7 +67,7 @@ const initialProjects: Project[] = [
 ];
 
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const { data: projects, addItem, updateItem, deleteItem } = usePersistentData<Project>('projects', initialProjects);
   const [filter, setFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -81,6 +84,7 @@ export default function ProjectsPage() {
     progress: 0,
     start_date: '',
     due_date: '',
+    image_url: '',
   });
 
   const filteredProjects = filter === 'all'
@@ -92,8 +96,7 @@ export default function ProjectsPage() {
     if (!form.name.trim()) return;
 
     if (editingProject) {
-      setProjects(projects.map(p => p.id === editingProject.id ? {
-        ...p,
+      updateItem(editingProject.id, {
         name: form.name,
         code: form.code,
         description: form.description,
@@ -103,8 +106,9 @@ export default function ProjectsPage() {
         status: form.status,
         priority: form.priority,
         progress: Number(form.progress) || 0,
-        due_date: form.due_date || p.due_date,
-      } : p));
+        due_date: form.due_date || editingProject.due_date,
+        image_url: form.image_url,
+      });
       setEditingProject(null);
     } else {
       const newProj: Project = {
@@ -120,8 +124,9 @@ export default function ProjectsPage() {
         unit: form.unit,
         pm: form.pm,
         progress: 0,
+        image_url: form.image_url,
       };
-      setProjects([newProj, ...projects]);
+      addItem(newProj);
     }
 
     setIsModalOpen(false);
@@ -142,13 +147,14 @@ export default function ProjectsPage() {
       progress: proj.progress,
       start_date: proj.start_date,
       due_date: proj.due_date,
+      image_url: proj.image_url || '',
     });
     setIsModalOpen(true);
   };
 
   const handleDelete = (id: string, name: string) => {
     if (confirm(`Yakin ingin menghapus proyek "${name}"?`)) {
-      setProjects(projects.filter(p => p.id !== id));
+      deleteItem(id);
     }
   };
 
@@ -165,6 +171,7 @@ export default function ProjectsPage() {
       progress: 0,
       start_date: '',
       due_date: '',
+      image_url: '',
     });
   };
 
@@ -219,6 +226,12 @@ export default function ProjectsPage() {
                   {p.status}
                 </span>
               </div>
+
+              {p.image_url && (
+                <div style={{ marginBottom: '12px', borderRadius: '6px', overflow: 'hidden', height: '140px', backgroundColor: '#f1f5f9' }}>
+                  <img src={p.image_url} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+              )}
 
               <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 'var(--space-2)' }}>
                 {p.name}
@@ -410,6 +423,12 @@ export default function ProjectsPage() {
                     />
                   </div>
                 </div>
+
+                <DriveImageUploader
+                  label="Upload Poster / Cover / Moodboard Proyek (Google Drive)"
+                  currentImageUrl={form.image_url}
+                  onImageUploaded={(url) => setForm({ ...form, image_url: url })}
+                />
               </div>
 
               <div className="modal-footer">

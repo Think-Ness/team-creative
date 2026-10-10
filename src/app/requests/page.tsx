@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Filter, Check, X, ArrowRight, DollarSign, Users, Clock, Edit3, Trash2 } from 'lucide-react';
+import { Plus, Filter, Check, X, ArrowRight, DollarSign, Users, Clock, Edit3, Trash2, ExternalLink } from 'lucide-react';
+import { usePersistentData } from '@/lib/usePersistentData';
+import DriveImageUploader from '@/components/common/DriveImageUploader';
 
 interface Idea {
   id: string;
@@ -13,6 +15,7 @@ interface Idea {
   status: 'draft' | 'submitted' | 'under_review' | 'accepted' | 'rejected';
   submitted_by: string;
   created_at: string;
+  image_url?: string;
 }
 
 const initialIdeas: Idea[] = [
@@ -63,7 +66,7 @@ const initialIdeas: Idea[] = [
 ];
 
 export default function RequestsPage() {
-  const [ideas, setIdeas] = useState<Idea[]>(initialIdeas);
+  const { data: ideas, addItem, updateItem, deleteItem } = usePersistentData<Idea>('requests', initialIdeas);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingIdea, setEditingIdea] = useState<Idea | null>(null);
@@ -75,6 +78,7 @@ export default function RequestsPage() {
     estimated_budget: '',
     priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
     status: 'submitted' as any,
+    image_url: '',
   });
 
   const filteredIdeas = filterStatus === 'all' 
@@ -86,15 +90,15 @@ export default function RequestsPage() {
     if (!form.title.trim()) return;
 
     if (editingIdea) {
-      setIdeas(ideas.map(i => i.id === editingIdea.id ? {
-        ...i,
+      updateItem(editingIdea.id, {
         title: form.title,
         description: form.description,
-        target_audience: form.target_audience || i.target_audience,
+        target_audience: form.target_audience || editingIdea.target_audience,
         estimated_budget: Number(form.estimated_budget) || 0,
         priority: form.priority,
         status: form.status,
-      } : i));
+        image_url: form.image_url,
+      });
       setEditingIdea(null);
     } else {
       const newIdea: Idea = {
@@ -107,8 +111,9 @@ export default function RequestsPage() {
         status: 'submitted',
         submitted_by: 'Ahmad Fauzi (You)',
         created_at: new Date().toISOString().split('T')[0],
+        image_url: form.image_url,
       };
-      setIdeas([newIdea, ...ideas]);
+      addItem(newIdea);
     }
 
     setIsModalOpen(false);
@@ -124,13 +129,14 @@ export default function RequestsPage() {
       estimated_budget: String(idea.estimated_budget),
       priority: idea.priority,
       status: idea.status,
+      image_url: idea.image_url || '',
     });
     setIsModalOpen(true);
   };
 
   const handleDelete = (id: string, title: string) => {
     if (confirm(`Hapus usulan ide "${title}"?`)) {
-      setIdeas(ideas.filter(i => i.id !== id));
+      deleteItem(id);
     }
   };
 
@@ -142,11 +148,12 @@ export default function RequestsPage() {
       estimated_budget: '',
       priority: 'medium',
       status: 'submitted',
+      image_url: '',
     });
   };
 
   const updateStatus = (id: string, newStatus: Idea['status']) => {
-    setIdeas(ideas.map(item => item.id === id ? { ...item, status: newStatus } : item));
+    updateItem(id, { status: newStatus });
   };
 
   return (
@@ -207,6 +214,12 @@ export default function RequestsPage() {
                 <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px' }}>
                   {idea.description}
                 </p>
+
+                {idea.image_url && (
+                  <div style={{ marginTop: '8px', marginBottom: '8px', borderRadius: '6px', overflow: 'hidden', maxWidth: '280px', maxHeight: '160px', backgroundColor: '#f1f5f9' }}>
+                    <img src={idea.image_url} alt={idea.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                )}
               </div>
 
               {/* Status Action Buttons */}
@@ -381,6 +394,12 @@ export default function RequestsPage() {
                     </select>
                   </div>
                 </div>
+
+                <DriveImageUploader
+                  label="Upload Contoh Visual / Moodboard Referensi (Google Drive)"
+                  currentImageUrl={form.image_url}
+                  onImageUploaded={(url) => setForm({ ...form, image_url: url })}
+                />
               </div>
 
               <div className="modal-footer">

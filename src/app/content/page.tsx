@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Image as ImageIcon, Video, FileText, Send, Calendar, CheckCircle2, X, Edit3, Trash2 } from 'lucide-react';
+import { Plus, Image as ImageIcon, Video, FileText, Send, Calendar, CheckCircle2, X, Edit3, Trash2, ExternalLink } from 'lucide-react';
+import { usePersistentData } from '@/lib/usePersistentData';
+import DriveImageUploader from '@/components/common/DriveImageUploader';
 
 interface ContentItem {
   id: string;
@@ -12,6 +14,7 @@ interface ContentItem {
   scheduled_at: string;
   author: string;
   version: number;
+  image_url?: string;
 }
 
 const initialContent: ContentItem[] = [
@@ -58,7 +61,7 @@ const initialContent: ContentItem[] = [
 ];
 
 export default function ContentPage() {
-  const [items, setItems] = useState<ContentItem[]>(initialContent);
+  const { data: items, addItem, updateItem, deleteItem } = usePersistentData<ContentItem>('content', initialContent);
   const [channelFilter, setChannelFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ContentItem | null>(null);
@@ -71,6 +74,7 @@ export default function ContentPage() {
     scheduled_at: '',
     author: 'Dewi Lestari',
     version: 1,
+    image_url: '',
   });
 
   const filtered = channelFilter === 'all'
@@ -82,16 +86,16 @@ export default function ContentPage() {
     if (!form.title.trim()) return;
 
     if (editingItem) {
-      setItems(items.map(i => i.id === editingItem.id ? {
-        ...i,
+      updateItem(editingItem.id, {
         title: form.title,
         channel: form.channel,
         format: form.format,
         status: form.status,
-        scheduled_at: form.scheduled_at || i.scheduled_at,
+        scheduled_at: form.scheduled_at || editingItem.scheduled_at,
         author: form.author,
-        version: Number(form.version) || i.version,
-      } : i));
+        version: Number(form.version) || editingItem.version,
+        image_url: form.image_url,
+      });
       setEditingItem(null);
     } else {
       const newItem: ContentItem = {
@@ -103,8 +107,9 @@ export default function ContentPage() {
         scheduled_at: form.scheduled_at || '2026-03-20',
         author: form.author,
         version: 1,
+        image_url: form.image_url,
       };
-      setItems([newItem, ...items]);
+      addItem(newItem);
     }
 
     setIsModalOpen(false);
@@ -121,13 +126,14 @@ export default function ContentPage() {
       scheduled_at: item.scheduled_at,
       author: item.author,
       version: item.version,
+      image_url: item.image_url || '',
     });
     setIsModalOpen(true);
   };
 
   const handleDelete = (id: string, title: string) => {
     if (confirm(`Hapus materi konten "${title}"?`)) {
-      setItems(items.filter(i => i.id !== id));
+      deleteItem(id);
     }
   };
 
@@ -140,6 +146,7 @@ export default function ContentPage() {
       scheduled_at: '',
       author: 'Dewi Lestari',
       version: 1,
+      image_url: '',
     });
   };
 
@@ -200,9 +207,14 @@ export default function ContentPage() {
             {filtered.map((c) => (
               <tr key={c.id}>
                 <td>
-                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                    {c.title}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {c.image_url && (
+                      <img src={c.image_url} alt={c.title} style={{ width: '36px', height: '36px', borderRadius: '4px', objectFit: 'cover', border: '1px solid #e2e8f0' }} />
+                    )}
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {c.title}
+                    </span>
+                  </div>
                 </td>
                 <td>
                   <span className="badge" style={{ textTransform: 'capitalize' }}>
@@ -360,6 +372,12 @@ export default function ContentPage() {
                     />
                   </div>
                 </div>
+
+                <DriveImageUploader
+                  label="Upload Gambar / Desain Cover Konten (Google Drive)"
+                  currentImageUrl={form.image_url}
+                  onImageUploaded={(url) => setForm({ ...form, image_url: url })}
+                />
               </div>
 
               <div className="modal-footer">

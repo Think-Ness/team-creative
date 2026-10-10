@@ -37,8 +37,9 @@ export async function uploadFileToDrive(file: File, folderId?: string) {
     name: file.name,
   };
 
-  if (folderId) {
-    requestBody.parents = [folderId];
+  const targetFolder = folderId || process.env.GOOGLE_DRIVE_FOLDER_ID;
+  if (targetFolder && targetFolder.trim() !== '') {
+    requestBody.parents = [targetFolder.trim()];
   }
 
   const response = await drive.files.create({
@@ -50,5 +51,24 @@ export async function uploadFileToDrive(file: File, folderId?: string) {
     fields: 'id, name, webViewLink, webContentLink, size, mimeType',
   });
 
-  return response.data;
+  if (response.data.id) {
+    try {
+      await drive.permissions.create({
+        fileId: response.data.id,
+        requestBody: {
+          role: 'reader',
+          type: 'anyone',
+        },
+      });
+    } catch (permErr) {
+      console.warn('Could not set public permissions on drive file:', permErr);
+    }
+  }
+
+  return {
+    ...response.data,
+    thumbnailLink: response.data.id 
+      ? `https://lh3.googleusercontent.com/d/${response.data.id}` 
+      : response.data.webViewLink,
+  };
 }
