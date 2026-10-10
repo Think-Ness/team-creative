@@ -22,7 +22,7 @@ export default function Topbar() {
       <div className="breadcrumbs" style={{ fontSize: '14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span>6102 Network</span>
         <span>/</span>
-        <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{currentUser.campus}</span>
+        <span suppressHydrationWarning style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{currentUser.campus}</span>
       </div>
 
       <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
@@ -48,8 +48,8 @@ export default function Topbar() {
               style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }}
             />
             <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
-              <div style={{ fontSize: '13px', fontWeight: 600 }}>{currentUser.name}</div>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+              <div suppressHydrationWarning style={{ fontSize: '13px', fontWeight: 600 }}>{currentUser.name}</div>
+              <div suppressHydrationWarning style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
                 {getRoleLabel(currentUser.role)} • {currentUser.division}
               </div>
             </div>

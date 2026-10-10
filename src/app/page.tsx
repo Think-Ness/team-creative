@@ -9,7 +9,7 @@ import {
   CheckCircle2, 
   Plus, 
   ArrowUpRight, 
-  Sparkles,
+  Lightbulb,
   Calendar,
   Layers,
   TrendingUp
@@ -140,7 +140,7 @@ export default function Dashboard() {
         <div className="stat-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span className="stat-label">USULAN KREATIF</span>
-            <Sparkles size={18} color="var(--text-secondary)" />
+            <Lightbulb size={18} color="var(--text-secondary)" />
           </div>
           <div className="stat-value">{stats.pendingRequests}</div>
           <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>

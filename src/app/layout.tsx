@@ -12,6 +12,7 @@ export const metadata: Metadata = {
 };
 
 import AppProviders from '@/components/layout/AppProviders';
+import AppShell from '@/components/layout/AppShell';
 
 export default function RootLayout({
   children,
@@ -19,16 +20,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <AppProviders>
-          <div className="app-container">
-            <Sidebar />
-            <div className="main-content">
-              <Topbar />
-              <main className="page-content">{children}</main>
-            </div>
-          </div>
+          <AppShell>{children}</AppShell>
         </AppProviders>
       </body>
     </html>

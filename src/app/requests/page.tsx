@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Filter, Sparkles, Check, X, ArrowRight, DollarSign, Users, Clock, Edit3, Trash2 } from 'lucide-react';
+import { Plus, Filter, Check, X, ArrowRight, DollarSign, Users, Clock, Edit3, Trash2 } from 'lucide-react';
 
 interface Idea {
   id: string;

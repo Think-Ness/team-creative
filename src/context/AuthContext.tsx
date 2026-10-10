@@ -91,40 +91,44 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [users, setUsers] = useState<AppUser[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('6102_users');
-      if (saved) {
-        try { return JSON.parse(saved); } catch (e) {}
-      }
-    }
-    return PRESET_USERS;
-  });
-
-  const [currentUser, setCurrentUserState] = useState<AppUser>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('6102_current_user');
-      if (saved) {
-        try { 
-          const parsed = JSON.parse(saved);
-          if (parsed && parsed.email) return parsed;
-        } catch (e) {}
-      }
-    }
-    return PRESET_USERS[0];
-  });
+  const [users, setUsers] = useState<AppUser[]>(PRESET_USERS);
+  const [currentUser, setCurrentUserState] = useState<AppUser>(PRESET_USERS[0]);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    try {
+      const savedUsers = localStorage.getItem('6102_users');
+      if (savedUsers) {
+        const parsed = JSON.parse(savedUsers);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setUsers(parsed);
+        }
+      }
+      const savedUser = localStorage.getItem('6102_current_user');
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        if (parsed && parsed.email) {
+          setCurrentUserState(parsed);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to parse auth state:', e);
+    } finally {
+      setIsLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isLoaded && typeof window !== 'undefined') {
       localStorage.setItem('6102_users', JSON.stringify(users));
     }
-  }, [users]);
+  }, [users, isLoaded]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (isLoaded && typeof window !== 'undefined') {
       localStorage.setItem('6102_current_user', JSON.stringify(currentUser));
     }
-  }, [currentUser]);
+  }, [currentUser, isLoaded]);
 
   const setCurrentUser = (user: AppUser) => {
     setCurrentUserState(user);
