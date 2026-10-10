@@ -81,7 +81,8 @@ interface AuthContextType {
   currentUser: AppUser;
   setCurrentUser: (user: AppUser) => void;
   switchUser: (userId: string) => void;
-  loginWithCredentials: (email: string, password: string) => { success: boolean; error?: string };
+  loginWithCredentials: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => void;
   users: AppUser[];
   registerUser: (newUser: Omit<AppUser, 'id'>) => AppUser;
   updateUser: (id: string, updated: Partial<AppUser>) => void;
@@ -141,20 +142,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const loginWithCredentials = (email: string, password: string): { success: boolean; error?: string } => {
+  const logout = () => {
+    localStorage.removeItem('6102_current_user');
+    setCurrentUserState(PRESET_USERS[0]);
+    if (typeof document !== 'undefined') {
+      document.cookie = '6102_user_session=; path=/; max-age=0;';
+    }
+  };
+
+  const loginWithCredentials = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     const trimmedEmail = email.trim().toLowerCase();
-    const found = users.find(u => u.email.toLowerCase() === trimmedEmail);
-    
-    if (!found) {
-      return { success: false, error: 'Email belum terdaftar. Gunakan superadmin@creative.id atau pilih akun demo.' };
-    }
 
-    if (found.password && found.password !== password) {
-      return { success: false, error: 'Kata sandi (password) salah! Untuk akun demo gunakan password: 123123' };
-    }
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: trimmedEmail, password }),
+      });
 
-    setCurrentUserState(found);
-    return { success: true };
+      const data = await res.json();
+      if (data.success && data.user) {
+        setCurrentUserState(data.user);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('6102_current_user', JSON.stringify(data.user));
+        }
+        return { success: true };
+      } else {
+        return { success: false, error: data.error || 'Autentikasi gagal.' };
+      }
+    } catch (err) {
+      console.warn('Network login fallback:', err);
+      // Fallback local lookup
+      const found = users.find(u => u.email.toLowerCase() === trimmedEmail);
+      if (!found) {
+        return { success: false, error: 'Email belum terdaftar di sistem. Gunakan superadmin@creative.id' };
+      }
+      if (found.password && found.password !== password) {
+        return { success: false, error: 'Kata sandi (password) salah! Password bawaan: 123123' };
+      }
+      setCurrentUserState(found);
+      return { success: true };
+    }
   };
 
   const registerUser = (data: Omit<AppUser, 'id'>): AppUser => {
@@ -187,6 +215,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setCurrentUser,
       switchUser,
       loginWithCredentials,
+      logout,
       users,
       registerUser,
       updateUser,

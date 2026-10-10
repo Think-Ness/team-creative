@@ -14,24 +14,31 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setLoading(true);
 
-    const result = loginWithCredentials(email, password);
-    setLoading(false);
+    try {
+      const result = await loginWithCredentials(email, password);
+      setLoading(false);
 
-    if (result.success) {
-      router.push('/');
-    } else {
-      setErrorMsg(result.error || 'Login gagal.');
+      if (result.success) {
+        router.push('/');
+        router.refresh();
+      } else {
+        setErrorMsg(result.error || 'Login gagal.');
+      }
+    } catch (err: any) {
+      setLoading(false);
+      setErrorMsg(err.message || 'Terjadi kesalahan saat memproses login.');
     }
   };
 
   const handleSelectPreset = (id: string) => {
     switchUser(id);
     router.push('/');
+    router.refresh();
   };
 
   return (

@@ -82,7 +82,10 @@ export default function Sidebar() {
         </div>
       </div>
       
-      <div style={{ padding: 'var(--space-4) 0', borderTop: '1px solid var(--border-color)' }}>
+      <div style={{ padding: 'var(--space-2) 0', borderTop: '1px solid var(--border-color)' }}>
+        <Link href="/profile" className="nav-item" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-2) var(--space-6)', color: 'var(--text-primary)' }}>
+          <Users size={16} /> Profil & Riwayat Job
+        </Link>
         <Link href="/settings" className="nav-item" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-2) var(--space-6)', color: 'var(--text-primary)' }}>
           <Settings size={16} /> Settings
         </Link>
