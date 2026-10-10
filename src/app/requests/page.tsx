@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Plus, Filter, Check, X, ArrowRight, DollarSign, Users, Clock, Edit3, Trash2, ExternalLink } from 'lucide-react';
 import { usePersistentData } from '@/lib/usePersistentData';
 import DriveImageUploader from '@/components/common/DriveImageUploader';
@@ -252,9 +253,19 @@ export default function RequestsPage() {
                   </>
                 )}
                 {idea.status === 'accepted' && (
-                  <span style={{ fontSize: '12px', color: '#059669', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Check size={14} /> Diterima
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '12px', color: '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Check size={14} /> Disetujui
+                    </span>
+                    <Link 
+                      href={`/projects?create_from=${encodeURIComponent(idea.title)}&desc=${encodeURIComponent(idea.description)}&img=${encodeURIComponent(idea.image_url || '')}`}
+                      className="btn btn-primary"
+                      style={{ fontSize: '11px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <span>Lanjut: Buat Proyek</span>
+                      <ArrowRight size={12} />
+                    </Link>
+                  </div>
                 )}
               </div>
             </div>

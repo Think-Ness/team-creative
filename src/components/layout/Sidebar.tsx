@@ -21,6 +21,12 @@ export default function Sidebar() {
         6102 CREATIVE
       </div>
       <div style={{ padding: 'var(--space-4) 0', flex: 1, overflowY: 'auto' }}>
+        <div className="nav-section" style={{ marginBottom: 'var(--space-3)' }}>
+          <Link href="/" className="nav-item" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-2) var(--space-6)', color: 'var(--text-primary)', fontWeight: 600 }}>
+            <LayoutDashboard size={16} color="var(--accent-primary)" /> Dashboard Utama
+          </Link>
+        </div>
+
         <div className="nav-section">
           <div className="nav-section-title" style={{ padding: '0 var(--space-6)', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: 'var(--space-2)', fontWeight: 500 }}>
             WORK
@@ -29,7 +35,7 @@ export default function Sidebar() {
             <FolderOpen size={16} /> Requests
           </Link>
           <Link href="/projects" className="nav-item" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-2) var(--space-6)', color: 'var(--text-primary)' }}>
-            <LayoutDashboard size={16} /> Projects
+            <Palette size={16} /> Projects
           </Link>
           <Link href="/tasks" className="nav-item" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-2) var(--space-6)', color: 'var(--text-primary)' }}>
             <CheckSquare size={16} /> Tasks

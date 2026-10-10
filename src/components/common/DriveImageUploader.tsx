@@ -73,44 +73,10 @@ export default function DriveImageUploader({
         <label className="form-label" style={{ fontSize: '13px', fontWeight: 500, margin: 0 }}>
           {label}
         </label>
-        <button
-          type="button"
-          onClick={() => setShowFolderInput(!showFolderInput)}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: '#2563eb',
-            fontSize: '11px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            textDecoration: 'underline'
-          }}
-        >
-          <Folder size={12} />
-          {showFolderInput ? 'Sembunyikan Folder ID' : 'Atur Folder ID Drive'}
-        </button>
+        <span style={{ fontSize: '11px', color: '#16a34a', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <CheckCircle2 size={12} /> Auto-Sync ke Folder Majmu' 6102
+        </span>
       </div>
-
-      {showFolderInput && (
-        <div style={{ marginBottom: '8px', padding: '8px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
-          <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
-            ID Folder Google Drive Target (Opsional):
-          </label>
-          <input
-            type="text"
-            placeholder="Contoh: 1B2c3D4e5F6g7H8i9J0kL..."
-            className="form-input"
-            value={folderId}
-            onChange={(e) => setFolderId(e.target.value)}
-            style={{ fontSize: '12px', padding: '6px 8px' }}
-          />
-          <span style={{ fontSize: '10px', color: '#64748b', marginTop: '2px', display: 'block' }}>
-            ID folder dapat diambil dari URL folder Google Drive: <code>drive.google.com/drive/folders/[ID_FOLDER]</code>
-          </span>
-        </div>
-      )}
 
       {errorMsg && (
         <div style={{ padding: '8px 12px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', color: '#991b1b', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>

@@ -434,17 +434,35 @@ export default function ProfilePage() {
             </div>
 
             {/* Status Filter */}
-            <div style={{ display: 'flex', gap: '6px' }}>
-              {(['all', 'in_progress', 'review', 'done'] as const).map((st) => (
-                <button
-                  key={st}
-                  onClick={() => setFilterStatus(st)}
-                  className={`btn ${filterStatus === st ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ fontSize: '12px', padding: '4px 10px' }}
-                >
-                  {st === 'all' ? 'Semua' : st === 'done' ? 'Selesai' : st === 'in_progress' ? 'Berjalan' : 'Review'}
-                </button>
-              ))}
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => setFilterStatus('all')}
+                className={`btn ${filterStatus === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ fontSize: '12px', padding: '5px 12px' }}
+              >
+                Semua ({userJobs.length})
+              </button>
+              <button
+                onClick={() => setFilterStatus('done')}
+                className={`btn ${filterStatus === 'done' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ fontSize: '12px', padding: '5px 12px' }}
+              >
+                Selesai ({completedCount})
+              </button>
+              <button
+                onClick={() => setFilterStatus('in_progress')}
+                className={`btn ${filterStatus === 'in_progress' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ fontSize: '12px', padding: '5px 12px' }}
+              >
+                Berjalan ({inProgressCount})
+              </button>
+              <button
+                onClick={() => setFilterStatus('review')}
+                className={`btn ${filterStatus === 'review' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ fontSize: '12px', padding: '5px 12px' }}
+              >
+                Review ({reviewCount})
+              </button>
             </div>
           </div>
 
@@ -454,67 +472,152 @@ export default function ProfilePage() {
                 key={job.id} 
                 className="card"
                 style={{
-                  borderLeft: `4px solid ${
+                  borderLeft: `5px solid ${
                     job.status === 'done' ? '#10b981' : job.status === 'review' ? '#f59e0b' : '#3b82f6'
                   }`,
                   padding: 'var(--space-5)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'var(--space-4)',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
-                  <div style={{ flex: 1, minWidth: '280px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                      <span className={`status-pill ${
-                        job.status === 'done' ? 'status-active' : job.status === 'review' ? 'status-draft' : 'status-archived'
-                      }`} style={{ fontSize: '11px' }}>
-                        {job.status === 'done' ? 'Selesai (Done)' : job.status === 'review' ? 'Dalam Review (QC)' : 'Sedang Dikerjakan'}
-                      </span>
-                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>• {job.project}</span>
-                    </div>
-
-                    <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 6px 0' }}>
-                      {job.title}
-                    </h3>
-
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                      <span><strong>Peran:</strong> {job.role}</span>
-                      <span><strong>Divisi:</strong> {job.division}</span>
-                      <span><strong>Kampus:</strong> {job.campus}</span>
-                      <span><strong>Tenggat:</strong> {job.dueDate}</span>
-                      {job.completedDate && (
-                        <span style={{ color: '#059669', fontWeight: 500 }}>
-                          <strong>Selesai:</strong> {job.completedDate}
-                        </span>
-                      )}
-                    </div>
-
-                    {job.notes && (
-                      <p style={{ fontSize: '13px', color: '#475569', backgroundColor: '#f8fafc', padding: '8px 12px', borderRadius: '6px', margin: 0 }}>
-                        {job.notes}
-                      </p>
-                    )}
+                {/* Header row: Project pill & Status */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ 
+                      backgroundColor: '#f1f5f9', 
+                      color: '#475569', 
+                      fontSize: '11px', 
+                      fontWeight: 700, 
+                      padding: '3px 8px', 
+                      borderRadius: '4px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.3px'
+                    }}>
+                      📁 {job.project}
+                    </span>
+                    <span style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace' }}>
+                      #{job.id}
+                    </span>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
-                    {job.deliverableLink && (
-                      <a
-                        href={job.deliverableLink}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="btn btn-secondary"
-                        style={{ fontSize: '12px', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                      >
-                        <ExternalLink size={13} />
-                        Lihat File Kerja / Drive
-                      </a>
+                  <span className={`status-pill ${
+                    job.status === 'done' ? 'status-active' : job.status === 'review' ? 'status-draft' : 'status-archived'
+                  }`} style={{ fontSize: '11px', padding: '3px 10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    {job.status === 'done' ? (
+                      <>
+                        <CheckCircle2 size={12} /> Selesai (Done)
+                      </>
+                    ) : job.status === 'review' ? (
+                      <>
+                        <Clock size={12} /> Dalam Review (QC)
+                      </>
+                    ) : (
+                      <>
+                        <Layers size={12} /> Sedang Dikerjakan
+                      </>
                     )}
-                    <Link
-                      href="/approvals"
+                  </span>
+                </div>
+
+                {/* Job Title */}
+                <div>
+                  <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)', margin: 0, lineHeight: 1.4 }}>
+                    {job.title}
+                  </h3>
+                </div>
+
+                {/* Structured Metadata Grid */}
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                  gap: '10px',
+                  backgroundColor: '#f8fafc',
+                  padding: '12px 14px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid #e2e8f0',
+                  fontSize: '12px'
+                }}>
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>
+                      Peran & Penugasan
+                    </div>
+                    <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginTop: '2px' }}>
+                      {job.role}
+                    </div>
+                    <div style={{ color: '#2563eb', fontSize: '11px', marginTop: '1px' }}>
+                      Divisi {job.division}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>
+                      Kampus Asal
+                    </div>
+                    <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Building2 size={13} color="#64748b" /> {job.campus}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>
+                      Tenggat & Penyelesaian
+                    </div>
+                    <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Calendar size={13} color="#64748b" /> Tenggat: {job.dueDate}
+                    </div>
+                    {job.completedDate && (
+                      <div style={{ color: '#059669', fontSize: '11px', fontWeight: 600, marginTop: '1px' }}>
+                        ✓ Tuntas: {job.completedDate}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Job Notes if present */}
+                {job.notes && (
+                  <div style={{ 
+                    borderLeft: '3px solid #cbd5e1', 
+                    paddingLeft: '12px', 
+                    fontSize: '13px', 
+                    color: '#475569', 
+                    backgroundColor: '#fafbfc', 
+                    padding: '8px 12px',
+                    borderRadius: '0 6px 6px 0' 
+                  }}>
+                    <strong style={{ color: '#334155' }}>Catatan Progres:</strong> {job.notes}
+                  </div>
+                )}
+
+                {/* Footer Action Bar */}
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'flex-end', 
+                  alignItems: 'center', 
+                  gap: '8px', 
+                  flexWrap: 'wrap',
+                  paddingTop: 'var(--space-2)',
+                  borderTop: '1px solid #f1f5f9'
+                }}>
+                  {job.deliverableLink && (
+                    <a
+                      href={job.deliverableLink}
+                      target="_blank"
+                      rel="noreferrer"
                       className="btn btn-secondary"
-                      style={{ fontSize: '12px', padding: '6px 12px' }}
+                      style={{ fontSize: '12px', padding: '6px 14px', display: 'flex', alignItems: 'center', gap: '6px' }}
                     >
-                      Buka di Approvals →
-                    </Link>
-                  </div>
+                      <ExternalLink size={13} />
+                      Buka File Kerja di Drive
+                    </a>
+                  )}
+                  <Link
+                    href="/approvals"
+                    className="btn btn-secondary"
+                    style={{ fontSize: '12px', padding: '6px 14px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    Buka di Approvals <ChevronRight size={13} />
+                  </Link>
                 </div>
               </div>
             ))}

@@ -2,13 +2,33 @@ import { google } from 'googleapis';
 import { Readable } from 'stream';
 
 export function getDriveClient() {
+  const serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
+  const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || 'creative6102@creative6102.iam.gserviceaccount.com';
+
+  // 1. Prioritize Google Service Account
+  if (serviceAccountKey && serviceAccountKey.trim() !== '') {
+    const formattedKey = serviceAccountKey.replace(/\\n/g, '\n').replace(/^"|"$/g, '');
+    const jwtClient = new google.auth.JWT({
+      email: serviceAccountEmail,
+      key: formattedKey,
+      scopes: ['https://www.googleapis.com/auth/drive'],
+    });
+
+    return {
+      client: jwtClient,
+      drive: google.drive({ version: 'v3', auth: jwtClient }),
+      authType: 'service_account',
+    };
+  }
+
+  // 2. Fallback to OAuth2
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const redirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/api/auth/google/callback';
   const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
 
   if (!clientId || !clientSecret) {
-    throw new Error('Google OAuth2 credentials (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET) are missing.');
+    throw new Error('Google Drive credentials are missing.');
   }
 
   const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
@@ -22,10 +42,11 @@ export function getDriveClient() {
   return {
     client: oauth2Client,
     drive: google.drive({ version: 'v3', auth: oauth2Client }),
+    authType: 'oauth2',
   };
 }
 
-export async function uploadFileToDrive(file: File, folderId?: string) {
+export async function uploadFileToDrive(file: File, folderId?: string, moduleName?: string) {
   const { drive } = getDriveClient();
 
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -37,6 +58,7 @@ export async function uploadFileToDrive(file: File, folderId?: string) {
     name: file.name,
   };
 
+  // Determine target folder (Master Folder Majmu' or specific module folder)
   const targetFolder = folderId || process.env.GOOGLE_DRIVE_FOLDER_ID;
   if (targetFolder && targetFolder.trim() !== '') {
     requestBody.parents = [targetFolder.trim()];

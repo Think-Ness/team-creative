@@ -11,16 +11,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
+    const hasServiceAccount = !!(process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY && process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.trim() !== '');
     const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
-    const hasValidToken = refreshToken && refreshToken !== 'your_google_refresh_token_here' && refreshToken.trim() !== '';
+    const hasOAuth = !!(refreshToken && refreshToken !== 'your_google_refresh_token_here' && refreshToken.trim() !== '');
+    const canUploadToDrive = hasServiceAccount || hasOAuth;
 
-    if (hasValidToken) {
+    if (canUploadToDrive) {
       try {
         const driveFile = await uploadFileToDrive(file, folderId);
         return NextResponse.json({
           success: true,
           file: driveFile,
           storage: 'google_drive',
+          authType: hasServiceAccount ? 'service_account' : 'oauth2',
         });
       } catch (driveErr: any) {
         console.warn('Google Drive direct upload failed, falling back to local base64 preview:', driveErr);
@@ -44,7 +47,7 @@ export async function POST(req: NextRequest) {
         size: file.size,
       },
       storage: 'fallback_preview',
-      note: hasValidToken ? undefined : 'Menggunakan preview lokal. Masukkan GOOGLE_REFRESH_TOKEN di .env.local untuk menyimpan langsung ke Google Drive Cloud.',
+      note: canUploadToDrive ? undefined : 'Menggunakan preview lokal. Hubungkan Google Service Account atau OAuth untuk menyimpan langsung ke Google Drive Cloud.',
     });
   } catch (error: any) {
     console.error('Upload Error:', error);
