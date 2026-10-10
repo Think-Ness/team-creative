@@ -2,23 +2,30 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth, PRESET_USERS } from '@/context/AuthContext';
-import { Shield, Users, Building2, Check, ArrowRight } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { Shield, Users, Building2, Check, Lock, Mail, ArrowRight, AlertCircle, Sparkles } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { currentUser, switchUser, users } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { currentUser, switchUser, users, loginWithCredentials } = useAuth();
+  
+  const [email, setEmail] = useState('superadmin@creative.id');
+  const [password, setPassword] = useState('123123');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleCustomLogin = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const found = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (found) {
-      switchUser(found.id);
+    setErrorMsg(null);
+    setLoading(true);
+
+    const result = loginWithCredentials(email, password);
+    setLoading(false);
+
+    if (result.success) {
       router.push('/');
     } else {
-      alert('Email belum terdaftar. Silakan pilih salah satu akun demo di bawah.');
+      setErrorMsg(result.error || 'Login gagal.');
     }
   };
 
@@ -28,98 +35,160 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: 'var(--space-8) 0' }}>
+    <div style={{ maxWidth: '880px', margin: '0 auto', padding: 'var(--space-6) 0' }}>
+      
+      {/* Title & Tagline */}
       <div style={{ textAlign: 'center', marginBottom: 'var(--space-8)' }}>
-        <span className="status-pill status-active" style={{ marginBottom: '8px' }}>
-          Sistem Autentikasi & Hirarki Akun
-        </span>
-        <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-primary)' }}>
-          Masuk ke 6102 Creative System
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+          <span className="status-pill status-active" style={{ fontSize: '11px', padding: '3px 10px' }}>
+            6102 CREATIVE SYSTEM
+          </span>
+        </div>
+        <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+          Masuk ke Portal Kreatif 6102
         </h1>
-        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px', maxWidth: '540px', margin: '4px auto 0' }}>
-          Akses multi-kampus dengan peran: <strong>Super Admin</strong>, <strong>Admin Kampus</strong>, dan <strong>Anggota Divisi</strong>.
+        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px', fontStyle: 'italic' }}>
+          “Different Campuses. Different Talents. One Creative Direction.”
         </p>
       </div>
 
-      {/* Preset Quick Login Grid */}
-      <div className="card" style={{ marginBottom: 'var(--space-8)' }}>
-        <h3 className="section-title" style={{ marginBottom: 'var(--space-3)' }}>
-          Pilih Akun Demo (Simulasi Peran Instan)
-        </h3>
-        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: 'var(--space-4)' }}>
-          Klik salah satu profil untuk langsung masuk dengan hak akses yang sesuai:
-        </p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
+        
+        {/* Form Login Super Admin / User */}
+        <div className="card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 'var(--space-4)' }}>
+            <Lock size={18} color="var(--text-primary)" />
+            <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Formulir Masuk Akun</h3>
+          </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-3)' }}>
-          {users.map((u) => {
-            const isCurrent = currentUser.id === u.id;
-            return (
-              <div
-                key={u.id}
-                onClick={() => handleSelectPreset(u.id)}
-                style={{
-                  border: isCurrent ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: 'var(--space-3)',
-                  cursor: 'pointer',
-                  background: isCurrent ? '#f8fafc' : 'var(--surface-color)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'var(--space-3)',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                <img src={u.avatar} alt={u.name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {u.name}
-                  </div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'capitalize' }}>
-                    {u.role.replace('_', ' ')} • <strong>{u.division}</strong>
-                  </div>
-                  <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
-                    {u.campus}
-                  </div>
-                </div>
-                {isCurrent && <Check size={16} color="#059669" />}
+          <form onSubmit={handleSubmit}>
+            {errorMsg && (
+              <div style={{ 
+                padding: 'var(--space-3)', 
+                background: '#fef2f2', 
+                border: '1px solid #fecaca', 
+                borderRadius: 'var(--radius-sm)', 
+                color: '#991b1b', 
+                fontSize: '13px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '8px',
+                marginBottom: 'var(--space-4)' 
+              }}>
+                <AlertCircle size={16} />
+                <span>{errorMsg}</span>
               </div>
-            );
-          })}
+            )}
+
+            <div className="form-group">
+              <label className="form-label">Email Pengguna</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="email"
+                  required
+                  placeholder="superadmin@creative.id"
+                  className="form-input"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                Default Super Admin: <strong>superadmin@creative.id</strong>
+              </span>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Kata Sandi (Password)</label>
+              <input
+                type="password"
+                required
+                placeholder="123123"
+                className="form-input"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{ width: '100%' }}
+              />
+              <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                Password bawaan: <strong>123123</strong>
+              </span>
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="btn btn-primary" 
+              style={{ width: '100%', padding: '10px 0', marginTop: 'var(--space-2)' }}
+            >
+              {loading ? 'Memverifikasi...' : 'Masuk Sekarang →'}
+            </button>
+          </form>
+
+          <div style={{ marginTop: 'var(--space-4)', paddingTop: 'var(--space-4)', borderTop: '1px solid var(--border-color)', fontSize: '12px', color: 'var(--text-secondary)' }}>
+            Akun aktif saat ini: <strong>{currentUser.name}</strong> ({currentUser.email})
+          </div>
         </div>
+
+        {/* 1-Click Fast Role Switcher */}
+        <div className="card" style={{ background: '#f8fafc' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 'var(--space-3)' }}>
+            <Sparkles size={18} color="#2563eb" />
+            <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Akses Instan Peran Demo (1-Click)</h3>
+          </div>
+          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: 'var(--space-3)' }}>
+            Klik profil di bawah untuk langsung mencoba tampilan dan wewenang masing-masing peran:
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+            {users.map((u) => {
+              const isCurrent = currentUser.id === u.id;
+              return (
+                <div
+                  key={u.id}
+                  onClick={() => handleSelectPreset(u.id)}
+                  style={{
+                    border: isCurrent ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: '8px 12px',
+                    cursor: 'pointer',
+                    background: isCurrent ? '#ffffff' : 'var(--surface-color)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                    <img src={u.avatar} alt={u.name} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {u.name}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        {u.role === 'super_admin' ? 'Super Admin' : u.role === 'campus_admin' ? 'Admin Kampus' : 'Anggota'} • <strong>{u.division}</strong> ({u.campus})
+                      </div>
+                    </div>
+                  </div>
+                  {isCurrent && <Check size={16} color="#059669" />}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
       </div>
 
-      {/* Alur Hirarki Penjelasan */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
-        <div className="card" style={{ borderLeft: '4px solid #0f172a' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <Shield size={16} />
-            <h4 style={{ fontSize: '14px', fontWeight: 600 }}>1. Super Admin (Pusat)</h4>
-          </div>
-          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-            Dapat membuat dan mendaftarkan <strong>Admin Kampus</strong> baru, mengelola semua kampus dan mengontrol seluruh brand guidelines.
-          </p>
-        </div>
-
-        <div className="card" style={{ borderLeft: '4px solid #2563eb' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <Building2 size={16} color="#2563eb" />
-            <h4 style={{ fontSize: '14px', fontWeight: 600 }}>2. Admin Kampus</h4>
-          </div>
-          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-            Bertanggung jawab mendaftarkan <strong>Anggota Tim</strong> di kampusnya masing-masing dan menentukan divisinya (Desain, Copywriter, dll).
-          </p>
-        </div>
-
-        <div className="card" style={{ borderLeft: '4px solid #059669' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <Users size={16} color="#059669" />
-            <h4 style={{ fontSize: '14px', fontWeight: 600 }}>3. Anggota Divisi</h4>
-          </div>
-          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-            Mengerjakan tugas sesuai spesialisasi: Tim Desain (visual), Tim Copywriter (naskah), Tim Video (motion/rekaman), dll.
-          </p>
-        </div>
+      {/* Ekosistem & Prinsip 6102 */}
+      <div className="card" style={{ borderLeft: '4px solid var(--accent-primary)' }}>
+        <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 'var(--space-2)' }}>
+          Filosofi Utama: Centralized Direction, Decentralized Creativity
+        </h3>
+        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          <strong>Yang Dipusatkan:</strong> Brand, Identitas Visual, Akun Media Resmi 6102, Major Campaign, Panduan Brand, dan Kendali Mutu (Quality Control).<br />
+          <strong>Yang Didesentralisasikan:</strong> Talenta, Produksi Lokal, Ide Kreatif, Dokumentasi Acara, dan Konten Khas Kampus.
+        </p>
       </div>
+
     </div>
   );
 }

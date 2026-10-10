@@ -3,12 +3,21 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export type UserRole = 'super_admin' | 'campus_admin' | 'member';
-export type Division = 'Desain' | 'Copywriting' | 'Motion & Video' | '3D & Multimedia' | 'Manajemen Kreatif';
+export type Division = 
+  | 'Graphic Design'
+  | 'Copywriting'
+  | 'Content'
+  | 'Creative Management'
+  | 'Event Coordinator'
+  | 'Film Production'
+  | 'Music Production'
+  | 'Camera & Editorial';
 
 export interface AppUser {
   id: string;
   name: string;
   email: string;
+  password?: string;
   role: UserRole;
   campus: string;
   division: Division;
@@ -18,44 +27,49 @@ export interface AppUser {
 export const PRESET_USERS: AppUser[] = [
   {
     id: 'usr-super-admin',
-    name: 'Ahmad Fauzi',
-    email: 'ahmad@6102creative.com',
+    name: 'Super Admin Pusat (Creative Lead)',
+    email: 'superadmin@creative.id',
+    password: '123123',
     role: 'super_admin',
     campus: 'Kantor Pusat / Multi-Kampus',
-    division: 'Manajemen Kreatif',
+    division: 'Creative Management',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
   },
   {
     id: 'usr-admin-jkt',
-    name: 'Siti Sarah',
-    email: 'siti.sarah@6102creative.com',
+    name: 'Siti Sarah (Admin Kampus JKT)',
+    email: 'admin.jkt@creative.id',
+    password: '123123',
     role: 'campus_admin',
     campus: 'Kampus Utama Jakarta',
-    division: 'Manajemen Kreatif',
+    division: 'Creative Management',
     avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150',
   },
   {
     id: 'usr-admin-bdg',
-    name: 'Reza Pratama',
-    email: 'reza.bdg@6102creative.com',
+    name: 'Reza Pratama (Admin Kampus BDG)',
+    email: 'admin.bdg@creative.id',
+    password: '123123',
     role: 'campus_admin',
     campus: 'Kampus Bandung Hub',
-    division: 'Motion & Video',
+    division: 'Film Production',
     avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
   },
   {
     id: 'usr-member-design',
     name: 'Budi Wicaksono',
-    email: 'budi.design@6102creative.com',
+    email: 'budi.design@creative.id',
+    password: '123123',
     role: 'member',
     campus: 'Kampus Utama Jakarta',
-    division: 'Desain',
+    division: 'Graphic Design',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
   },
   {
     id: 'usr-member-copy',
     name: 'Dewi Lestari',
-    email: 'dewi.copy@6102creative.com',
+    email: 'dewi.copy@creative.id',
+    password: '123123',
     role: 'member',
     campus: 'Kampus Surabaya Studio',
     division: 'Copywriting',
@@ -67,6 +81,7 @@ interface AuthContextType {
   currentUser: AppUser;
   setCurrentUser: (user: AppUser) => void;
   switchUser: (userId: string) => void;
+  loginWithCredentials: (email: string, password: string) => { success: boolean; error?: string };
   users: AppUser[];
   registerUser: (newUser: Omit<AppUser, 'id'>) => AppUser;
   updateUser: (id: string, updated: Partial<AppUser>) => void;
@@ -90,7 +105,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('6102_current_user');
       if (saved) {
-        try { return JSON.parse(saved); } catch (e) {}
+        try { 
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.email) return parsed;
+        } catch (e) {}
       }
     }
     return PRESET_USERS[0];
@@ -119,9 +137,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loginWithCredentials = (email: string, password: string): { success: boolean; error?: string } => {
+    const trimmedEmail = email.trim().toLowerCase();
+    const found = users.find(u => u.email.toLowerCase() === trimmedEmail);
+    
+    if (!found) {
+      return { success: false, error: 'Email belum terdaftar. Gunakan superadmin@creative.id atau pilih akun demo.' };
+    }
+
+    if (found.password && found.password !== password) {
+      return { success: false, error: 'Kata sandi (password) salah! Untuk akun demo gunakan password: 123123' };
+    }
+
+    setCurrentUserState(found);
+    return { success: true };
+  };
+
   const registerUser = (data: Omit<AppUser, 'id'>): AppUser => {
     const newUser: AppUser = {
       ...data,
+      password: data.password || '123123',
       id: `usr-${Date.now()}`,
     };
     setUsers(prev => [newUser, ...prev]);
@@ -147,6 +182,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       currentUser,
       setCurrentUser,
       switchUser,
+      loginWithCredentials,
       users,
       registerUser,
       updateUser,

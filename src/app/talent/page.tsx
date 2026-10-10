@@ -18,7 +18,7 @@ export default function TalentPage() {
     email: '',
     role: (currentUser.role === 'super_admin' ? 'campus_admin' : 'member') as UserRole,
     campus: currentUser.campus.includes('Pusat') ? 'Kampus Utama Jakarta' : currentUser.campus,
-    division: 'Desain' as Division,
+    division: 'Graphic Design' as Division,
   });
 
   const filtered = users.filter((u) => {
@@ -57,7 +57,7 @@ export default function TalentPage() {
       email: '',
       role: (currentUser.role === 'super_admin' ? 'campus_admin' : 'member'),
       campus: currentUser.campus.includes('Pusat') ? 'Kampus Utama Jakarta' : currentUser.campus,
-      division: 'Desain',
+      division: 'Graphic Design',
     });
   };
 
@@ -97,7 +97,7 @@ export default function TalentPage() {
           </h1>
           <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px' }}>
             {currentUser.role === 'super_admin'
-              ? 'Anda login sebagai Super Admin: Dapat mendaftarkan Admin Kampus dan mengelola seluruh anggota.'
+              ? 'Anda login sebagai Super Admin: Dapat mendaftarkan Admin Kampus dan mengelola seluruh anggota 8 divisi.'
               : `Anda login sebagai ${currentUser.role === 'campus_admin' ? 'Admin Kampus' : 'Anggota'}: Mengelola tim di ${currentUser.campus}.`}
           </p>
         </div>
@@ -110,7 +110,7 @@ export default function TalentPage() {
               email: '',
               role: currentUser.role === 'super_admin' ? 'campus_admin' : 'member',
               campus: currentUser.campus.includes('Pusat') ? 'Kampus Utama Jakarta' : currentUser.campus,
-              division: 'Desain',
+              division: 'Graphic Design',
             });
             setIsModalOpen(true);
           }} 
@@ -135,7 +135,17 @@ export default function TalentPage() {
         </div>
 
         <div className="filter-pills" style={{ marginBottom: 0 }}>
-          {['all', 'Desain', 'Copywriting', 'Motion & Video', '3D & Multimedia', 'Manajemen Kreatif'].map((d) => (
+          {[
+            'all', 
+            'Graphic Design', 
+            'Copywriting', 
+            'Content', 
+            'Creative Management', 
+            'Event Coordinator', 
+            'Film Production', 
+            'Music Production', 
+            'Camera & Editorial'
+          ].map((d) => (
             <button
               key={d}
               className={`filter-pill ${filterDivision === d ? 'active' : ''}`}
@@ -247,7 +257,7 @@ export default function TalentPage() {
                   <input
                     type="email"
                     required
-                    placeholder="rian@6102creative.com"
+                    placeholder="rian@creative.id"
                     className="form-input"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -271,17 +281,20 @@ export default function TalentPage() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Divisi / Spesialisasi</label>
+                    <label className="form-label">Divisi Spesialisasi 6102</label>
                     <select
                       className="form-input"
                       value={form.division}
                       onChange={(e) => setForm({ ...form, division: e.target.value as any })}
                     >
-                      <option value="Desain">Tim Desain</option>
-                      <option value="Copywriting">Tim Copywriter</option>
-                      <option value="Motion & Video">Tim Motion & Video</option>
-                      <option value="3D & Multimedia">Tim 3D & Multimedia</option>
-                      <option value="Manajemen Kreatif">Manajemen Kreatif</option>
+                      <option value="Graphic Design">Graphic Design</option>
+                      <option value="Copywriting">Copywriting</option>
+                      <option value="Content">Content</option>
+                      <option value="Creative Management">Creative Management</option>
+                      <option value="Event Coordinator">Event Coordinator</option>
+                      <option value="Film Production">Film Production</option>
+                      <option value="Music Production">Music Production</option>
+                      <option value="Camera & Editorial">Camera & Editorial</option>
                     </select>
                   </div>
                 </div>
