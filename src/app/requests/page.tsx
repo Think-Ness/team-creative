@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Filter, Sparkles, Check, X, ArrowRight, DollarSign, Users, Clock } from 'lucide-react';
+import { Plus, Filter, Sparkles, Check, X, ArrowRight, DollarSign, Users, Clock, Edit3, Trash2 } from 'lucide-react';
 
 interface Idea {
   id: string;
@@ -66,12 +66,15 @@ export default function RequestsPage() {
   const [ideas, setIdeas] = useState<Idea[]>(initialIdeas);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingIdea, setEditingIdea] = useState<Idea | null>(null);
+
   const [form, setForm] = useState({
     title: '',
     description: '',
     target_audience: '',
     estimated_budget: '',
     priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
+    status: 'submitted' as any,
   });
 
   const filteredIdeas = filterStatus === 'all' 
@@ -82,26 +85,63 @@ export default function RequestsPage() {
     e.preventDefault();
     if (!form.title.trim()) return;
 
-    const newIdea: Idea = {
-      id: `i${Date.now()}`,
-      title: form.title,
-      description: form.description,
-      target_audience: form.target_audience || 'Publik Kampus',
-      estimated_budget: Number(form.estimated_budget) || 0,
-      priority: form.priority,
-      status: 'submitted',
-      submitted_by: 'Ahmad Fauzi (You)',
-      created_at: new Date().toISOString().split('T')[0],
-    };
+    if (editingIdea) {
+      setIdeas(ideas.map(i => i.id === editingIdea.id ? {
+        ...i,
+        title: form.title,
+        description: form.description,
+        target_audience: form.target_audience || i.target_audience,
+        estimated_budget: Number(form.estimated_budget) || 0,
+        priority: form.priority,
+        status: form.status,
+      } : i));
+      setEditingIdea(null);
+    } else {
+      const newIdea: Idea = {
+        id: `i${Date.now()}`,
+        title: form.title,
+        description: form.description,
+        target_audience: form.target_audience || 'Publik Kampus',
+        estimated_budget: Number(form.estimated_budget) || 0,
+        priority: form.priority,
+        status: 'submitted',
+        submitted_by: 'Ahmad Fauzi (You)',
+        created_at: new Date().toISOString().split('T')[0],
+      };
+      setIdeas([newIdea, ...ideas]);
+    }
 
-    setIdeas([newIdea, ...ideas]);
     setIsModalOpen(false);
+    resetForm();
+  };
+
+  const startEdit = (idea: Idea) => {
+    setEditingIdea(idea);
+    setForm({
+      title: idea.title,
+      description: idea.description,
+      target_audience: idea.target_audience,
+      estimated_budget: String(idea.estimated_budget),
+      priority: idea.priority,
+      status: idea.status,
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = (id: string, title: string) => {
+    if (confirm(`Hapus usulan ide "${title}"?`)) {
+      setIdeas(ideas.filter(i => i.id !== id));
+    }
+  };
+
+  const resetForm = () => {
     setForm({
       title: '',
       description: '',
       target_audience: '',
       estimated_budget: '',
       priority: 'medium',
+      status: 'submitted',
     });
   };
 
@@ -122,7 +162,14 @@ export default function RequestsPage() {
           </p>
         </div>
 
-        <button onClick={() => setIsModalOpen(true)} className="btn btn-primary">
+        <button 
+          onClick={() => {
+            setEditingIdea(null);
+            resetForm();
+            setIsModalOpen(true);
+          }} 
+          className="btn btn-primary"
+        >
           <Plus size={16} /> Ajukan Ide Baru
         </button>
       </div>
@@ -193,46 +240,63 @@ export default function RequestsPage() {
                 )}
                 {idea.status === 'accepted' && (
                   <span style={{ fontSize: '12px', color: '#059669', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Check size={14} /> Siap Di-convert ke Proyek
+                    <Check size={14} /> Diterima
                   </span>
                 )}
               </div>
             </div>
 
-            {/* Metadata Footer */}
+            {/* Metadata Footer & Edit Bar */}
             <div style={{ 
               display: 'flex', 
-              gap: 'var(--space-6)', 
-              fontSize: '12px', 
-              color: 'var(--text-secondary)',
+              justifyContent: 'space-between',
+              alignItems: 'center',
               borderTop: '1px solid var(--border-color)',
               paddingTop: 'var(--space-2)',
               marginTop: 'var(--space-1)'
             }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Users size={13} /> Sasaran: {idea.target_audience}
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <DollarSign size={13} /> Estimasi: Rp {idea.estimated_budget.toLocaleString('id-ID')}
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Clock size={13} /> Diajukan oleh: {idea.submitted_by} ({idea.created_at})
-              </span>
+              <div style={{ display: 'flex', gap: 'var(--space-4)', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Users size={13} /> Sasaran: {idea.target_audience}
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <DollarSign size={13} /> Rp {idea.estimated_budget.toLocaleString('id-ID')}
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Clock size={13} /> {idea.submitted_by} ({idea.created_at})
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                <button
+                  onClick={() => startEdit(idea)}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '11px', padding: '3px 8px' }}
+                >
+                  <Edit3 size={11} /> Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(idea.id, idea.title)}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '11px', padding: '3px 8px', color: 'var(--danger-color)' }}
+                >
+                  <Trash2 size={11} /> Hapus
+                </button>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* New Idea Modal */}
+      {/* New / Edit Idea Modal */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Formulir Usulan Ide Kreatif</h3>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
-              >
+              <h3 style={{ fontSize: '16px', fontWeight: 600 }}>
+                {editingIdea ? 'Edit Usulan Ide Kreatif' : 'Formulir Usulan Ide Kreatif'}
+              </h3>
+              <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
                 <X size={18} />
               </button>
             </div>
@@ -287,18 +351,35 @@ export default function RequestsPage() {
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">Prioritas</label>
-                  <select
-                    className="form-input"
-                    value={form.priority}
-                    onChange={(e) => setForm({ ...form, priority: e.target.value as any })}
-                  >
-                    <option value="low">Rendah (Low)</option>
-                    <option value="medium">Sedang (Medium)</option>
-                    <option value="high">Tinggi (High)</option>
-                    <option value="urgent">Mendesak (Urgent)</option>
-                  </select>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                  <div className="form-group">
+                    <label className="form-label">Prioritas</label>
+                    <select
+                      className="form-input"
+                      value={form.priority}
+                      onChange={(e) => setForm({ ...form, priority: e.target.value as any })}
+                    >
+                      <option value="low">Rendah (Low)</option>
+                      <option value="medium">Sedang (Medium)</option>
+                      <option value="high">Tinggi (High)</option>
+                      <option value="urgent">Mendesak (Urgent)</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Status Usulan</label>
+                    <select
+                      className="form-input"
+                      value={form.status}
+                      onChange={(e) => setForm({ ...form, status: e.target.value as any })}
+                    >
+                      <option value="draft">Draft</option>
+                      <option value="submitted">Submitted</option>
+                      <option value="under_review">Under Review</option>
+                      <option value="accepted">Accepted</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -307,7 +388,7 @@ export default function RequestsPage() {
                   Batal
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  Kirim Usulan
+                  {editingIdea ? 'Simpan Perubahan' : 'Kirim Usulan'}
                 </button>
               </div>
             </form>

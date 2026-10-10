@@ -12,15 +12,19 @@ import {
   Check, 
   X, 
   HardDrive,
-  FileCode
+  FileCode,
+  Edit3,
+  Trash2,
+  Eye
 } from 'lucide-react';
 
 interface Asset {
   id: string;
   name: string;
+  drive_id?: string;
   drive_link: string;
   size_formatted: string;
-  asset_type: 'logo' | 'document' | 'video' | 'template';
+  asset_type: 'logo' | 'document' | 'video' | 'template' | 'photo';
   unit: string;
   uploaded_by: string;
   uploaded_at: string;
@@ -28,44 +32,69 @@ interface Asset {
 
 const initialAssets: Asset[] = [
   {
-    id: 'f0000000-0000-0000-0000-000000000001',
-    name: '6102_Primary_Logo_Vector.svg',
-    drive_link: 'https://drive.google.com/file/d/demo-vector-logo/view',
-    size_formatted: '102 KB',
-    asset_type: 'logo',
+    id: 'f001',
+    name: 'Key Visual & Poster Ramadhan (Karya Desain 01)',
+    drive_id: '11hIc4hsM-AfKwX_0nrCGNXv7G12Br8i8',
+    drive_link: 'https://drive.google.com/file/d/11hIc4hsM-AfKwX_0nrCGNXv7G12Br8i8/view?usp=sharing',
+    size_formatted: '2.4 MB',
+    asset_type: 'photo',
     unit: 'Brand & Visual Identity',
     uploaded_by: 'Budi Wicaksono',
-    uploaded_at: '2026-02-20',
+    uploaded_at: '2026-02-28',
   },
   {
-    id: 'f0000000-0000-0000-0000-000000000002',
-    name: 'Brand_Guidelines_Booklet_2026.pdf',
-    drive_link: 'https://drive.google.com/file/d/demo-brand-pdf/view',
-    size_formatted: '5.2 MB',
-    asset_type: 'document',
-    unit: 'Brand & Visual Identity',
-    uploaded_by: 'Budi Wicaksono',
-    uploaded_at: '2026-02-22',
+    id: 'f002',
+    name: 'Editorial Feed & Headline Typography (Karya Desain 02)',
+    drive_id: '1HMsNgOkbZA_rl3NxshxFLEapHdI8UZvu',
+    drive_link: 'https://drive.google.com/file/d/1HMsNgOkbZA_rl3NxshxFLEapHdI8UZvu/view?usp=sharing',
+    size_formatted: '3.1 MB',
+    asset_type: 'photo',
+    unit: 'Digital Publishing & Copy',
+    uploaded_by: 'Dewi Lestari',
+    uploaded_at: '2026-02-28',
   },
   {
-    id: 'f0000000-0000-0000-0000-000000000003',
-    name: 'Teaser_Ramadhan_Cut_01.mp4',
-    drive_link: 'https://drive.google.com/file/d/demo-video-cut/view',
-    size_formatted: '80.0 MB',
-    asset_type: 'video',
+    id: 'f003',
+    name: 'Mascot & Character Bandung Hub (Karya Desain 03)',
+    drive_id: '1MjmEUVo6IXKyFY5QJBnjGuSih7Puj9yf',
+    drive_link: 'https://drive.google.com/file/d/1MjmEUVo6IXKyFY5QJBnjGuSih7Puj9yf/view?usp=sharing',
+    size_formatted: '4.8 MB',
+    asset_type: 'photo',
     unit: 'Motion Graphics & 3D Lab',
     uploaded_by: 'Reza Pratama',
+    uploaded_at: '2026-02-27',
+  },
+  {
+    id: 'f004',
+    name: 'Billboard Display & Standing Banner (Karya Desain 04)',
+    drive_id: '1_MPbH-P3owSm0QLS11AwbWziF3nzBCJG',
+    drive_link: 'https://drive.google.com/file/d/1_MPbH-P3owSm0QLS11AwbWziF3nzBCJG/view?usp=sharing',
+    size_formatted: '5.2 MB',
+    asset_type: 'photo',
+    unit: 'Brand & Visual Identity',
+    uploaded_by: 'Budi Wicaksono',
     uploaded_at: '2026-02-26',
   },
   {
-    id: 'f0000000-0000-0000-0000-000000000004',
-    name: 'Social_Feed_Master_Template.psd',
-    drive_link: 'https://drive.google.com/file/d/demo-psd-template/view',
-    size_formatted: '42.0 MB',
-    asset_type: 'template',
-    unit: 'Digital Publishing',
-    uploaded_by: 'Budi Wicaksono',
-    uploaded_at: '2026-02-18',
+    id: 'f005',
+    name: 'Merchandise & Jersey Apparel Mockup (Karya Desain 05)',
+    drive_id: '1tOM13LlNo_bj7iKXglvPrux_nA53Nq0z',
+    drive_link: 'https://drive.google.com/file/d/1tOM13LlNo_bj7iKXglvPrux_nA53Nq0z/view?usp=sharing',
+    size_formatted: '1.8 MB',
+    asset_type: 'photo',
+    unit: 'Motion Graphics & 3D Lab',
+    uploaded_by: 'Reza Pratama',
+    uploaded_at: '2026-02-25',
+  },
+  {
+    id: 'f006',
+    name: 'Brand_Guidelines_Booklet_2026.pdf',
+    drive_link: 'https://drive.google.com/drive',
+    size_formatted: '5.2 MB',
+    asset_type: 'document',
+    unit: 'Brand & Visual Identity',
+    uploaded_by: 'Ahmad Fauzi',
+    uploaded_at: '2026-02-22',
   },
 ];
 
@@ -73,11 +102,13 @@ export default function AssetsPage() {
   const [assets, setAssets] = useState<Asset[]>(initialAssets);
   const [filterType, setFilterType] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<Asset | null>(null);
 
   // Upload state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [assetType, setAssetType] = useState<Asset['asset_type']>('document');
+  const [assetType, setAssetType] = useState<Asset['asset_type']>('photo');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -110,8 +141,10 @@ export default function AssetsPage() {
       const data = await res.json();
 
       let driveLink = 'https://drive.google.com/drive';
+      let driveId = '';
       if (data.file && (data.file.webViewLink || data.file.id)) {
         driveLink = data.file.webViewLink || `https://drive.google.com/file/d/${data.file.id}/view`;
+        driveId = data.file.id || '';
       }
 
       const formatSize = (bytes: number) => {
@@ -123,6 +156,7 @@ export default function AssetsPage() {
       const newAsset: Asset = {
         id: `f${Date.now()}`,
         name: selectedFile.name,
+        drive_id: driveId,
         drive_link: driveLink,
         size_formatted: formatSize(selectedFile.size),
         asset_type: assetType,
@@ -141,12 +175,17 @@ export default function AssetsPage() {
     }
   };
 
-  const getAssetIcon = (type: Asset['asset_type']) => {
-    switch (type) {
-      case 'video': return <Video size={18} color="#2563eb" />;
-      case 'logo': return <ImageIcon size={18} color="#059669" />;
-      case 'template': return <FileCode size={18} color="#d97706" />;
-      default: return <FileText size={18} color="#475569" />;
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAsset) return;
+
+    setAssets(assets.map(a => a.id === editingAsset.id ? editingAsset : a));
+    setEditingAsset(null);
+  };
+
+  const handleDelete = (id: string, name: string) => {
+    if (confirm(`Hapus berkas "${name}"?`)) {
+      setAssets(assets.filter(a => a.id !== id));
     }
   };
 
@@ -157,14 +196,14 @@ export default function AssetsPage() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: '4px' }}>
             <span className="status-pill status-active" style={{ fontSize: '11px', padding: '2px 8px' }}>
-              <HardDrive size={12} /> Google Drive OAuth2 Connected
+              <HardDrive size={12} /> Google Drive Personal OAuth2 Connected
             </span>
           </div>
           <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)' }}>
             Digital Asset Management (DAM)
           </h1>
           <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            Penyimpanan terpusat master aset visual, berkas video, dan panduan brand di akun Google Drive pribadi Anda.
+            Galeri master berkas, karya desain yang di-review bersama, dan berkas panduan di Google Drive.
           </p>
         </div>
 
@@ -175,87 +214,230 @@ export default function AssetsPage() {
 
       {/* Filter Tabs */}
       <div className="filter-pills">
-        {['all', 'logo', 'document', 'video', 'template'].map((t) => (
+        {['all', 'photo', 'document', 'logo', 'video', 'template'].map((t) => (
           <button
             key={t}
             className={`filter-pill ${filterType === t ? 'active' : ''}`}
             onClick={() => setFilterType(t)}
           >
-            {t === 'all' ? 'Semua Berkas' : t.toUpperCase()}
+            {t === 'all' ? 'Semua Berkas' : t === 'photo' ? 'Karya Desain' : t.toUpperCase()}
           </button>
         ))}
       </div>
 
-      {/* Assets Table */}
-      <div className="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Nama Aset</th>
-              <th>Kategori</th>
-              <th>Ukuran</th>
-              <th>Unit Pemilik</th>
-              <th>Pengunggah</th>
-              <th>Tanggal</th>
-              <th style={{ textAlign: 'right' }}>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((a) => (
-              <tr key={a.id}>
-                <td>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                    {getAssetIcon(a.asset_type)}
-                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                      {a.name}
-                    </span>
-                  </div>
-                </td>
-                <td>
-                  <span className="badge" style={{ textTransform: 'uppercase' }}>
-                    {a.asset_type}
-                  </span>
-                </td>
-                <td style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+      {/* Assets Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
+        {filtered.map((a) => (
+          <div key={a.id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            {a.drive_id ? (
+              <div 
+                style={{ 
+                  height: '160px', 
+                  borderRadius: 'var(--radius-sm)', 
+                  overflow: 'hidden', 
+                  position: 'relative',
+                  backgroundColor: '#f1f5f9',
+                  cursor: 'pointer',
+                  border: '1px solid var(--border-color)'
+                }}
+                onClick={() => setPreviewImage(a)}
+              >
+                <img 
+                  src={`https://lh3.googleusercontent.com/d/${a.drive_id}`} 
+                  alt={a.name}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+                <div style={{ 
+                  position: 'absolute', 
+                  bottom: '6px', 
+                  right: '6px',
+                  background: 'rgba(15, 23, 42, 0.75)',
+                  color: '#fff',
+                  padding: '2px 6px',
+                  borderRadius: '3px',
+                  fontSize: '10px'
+                }}>
+                  Klik Perbesar
+                </div>
+              </div>
+            ) : (
+              <div style={{ 
+                height: '100px', 
+                borderRadius: 'var(--radius-sm)', 
+                backgroundColor: '#f8fafc', 
+                border: '1px dashed var(--border-color)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--text-secondary)'
+              }}>
+                <FileText size={32} />
+              </div>
+            )}
+
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span className="badge" style={{ fontSize: '10px', textTransform: 'uppercase' }}>
+                  {a.asset_type}
+                </span>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
                   {a.size_formatted}
-                </td>
-                <td style={{ fontSize: '13px' }}>
-                  {a.unit}
-                </td>
-                <td style={{ fontSize: '13px' }}>
-                  {a.uploaded_by}
-                </td>
-                <td style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                  {a.uploaded_at}
-                </td>
-                <td style={{ textAlign: 'right' }}>
-                  <div style={{ display: 'inline-flex', gap: 'var(--space-2)' }}>
-                    <button
-                      onClick={() => copyToClipboard(a.id, a.drive_link)}
-                      className="btn btn-secondary"
-                      style={{ fontSize: '11px', padding: '4px 8px' }}
-                      title="Salin Link Google Drive"
-                    >
-                      {copiedId === a.id ? <Check size={12} color="#059669" /> : <Copy size={12} />}
-                      {copiedId === a.id ? 'Tersalin' : 'Link'}
-                    </button>
-                    <a
-                      href={a.drive_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-secondary"
-                      style={{ fontSize: '11px', padding: '4px 8px' }}
-                      title="Buka di Google Drive"
-                    >
-                      <ExternalLink size={12} /> Buka
-                    </a>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </span>
+              </div>
+
+              <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '4px', lineHeight: 1.3 }}>
+                {a.name}
+              </h4>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                {a.unit} • Oleh {a.uploaded_by}
+              </div>
+            </div>
+
+            <div style={{ 
+              borderTop: '1px solid var(--border-color)', 
+              paddingTop: 'var(--space-2)',
+              marginTop: 'auto',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
+                <button
+                  onClick={() => setEditingAsset(a)}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '11px', padding: '3px 6px' }}
+                >
+                  <Edit3 size={11} /> Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(a.id, a.name)}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '11px', padding: '3px 6px', color: 'var(--danger-color)' }}
+                >
+                  <Trash2 size={11} />
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
+                <button
+                  onClick={() => copyToClipboard(a.id, a.drive_link)}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '11px', padding: '3px 6px' }}
+                >
+                  {copiedId === a.id ? <Check size={11} color="#059669" /> : <Copy size={11} />}
+                </button>
+                <a
+                  href={a.drive_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '11px', padding: '3px 6px' }}
+                >
+                  <ExternalLink size={11} />
+                </a>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
+
+      {/* Image Zoom Modal */}
+      {previewImage && (
+        <div className="modal-overlay" onClick={() => setPreviewImage(null)}>
+          <div className="modal-content" style={{ maxWidth: '850px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 style={{ fontSize: '16px', fontWeight: 600 }}>{previewImage.name}</h3>
+              <button onClick={() => setPreviewImage(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="modal-body" style={{ textAlign: 'center', backgroundColor: '#0f172a', padding: 'var(--space-4)' }}>
+              <img 
+                src={`https://lh3.googleusercontent.com/d/${previewImage.drive_id}`} 
+                alt={previewImage.name}
+                style={{ maxWidth: '100%', maxHeight: '65vh', objectFit: 'contain', borderRadius: '4px' }}
+              />
+            </div>
+            <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
+              <a 
+                href={previewImage.drive_link} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="btn btn-secondary"
+                style={{ fontSize: '12px' }}
+              >
+                <ExternalLink size={14} /> Buka di Google Drive Asli
+              </a>
+              <button onClick={() => setPreviewImage(null)} className="btn btn-primary" style={{ fontSize: '12px' }}>
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Asset Modal */}
+      {editingAsset && (
+        <div className="modal-overlay" onClick={() => setEditingAsset(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Edit Informasi Aset</h3>
+              <button onClick={() => setEditingAsset(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit}>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label className="form-label">Nama Berkas *</label>
+                  <input
+                    type="text"
+                    required
+                    className="form-input"
+                    value={editingAsset.name}
+                    onChange={(e) => setEditingAsset({ ...editingAsset, name: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Unit Pemilik</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editingAsset.unit}
+                    onChange={(e) => setEditingAsset({ ...editingAsset, unit: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Kategori</label>
+                  <select
+                    className="form-input"
+                    value={editingAsset.asset_type}
+                    onChange={(e) => setEditingAsset({ ...editingAsset, asset_type: e.target.value as any })}
+                  >
+                    <option value="photo">Karya Desain / Foto</option>
+                    <option value="document">Dokumen / PDF</option>
+                    <option value="logo">Logo & Identitas</option>
+                    <option value="video">Video & Animasi</option>
+                    <option value="template">Template Desain</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button type="button" onClick={() => setEditingAsset(null)} className="btn btn-secondary">
+                  Batal
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Simpan Perubahan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Upload Modal */}
       {isModalOpen && (
@@ -263,10 +445,7 @@ export default function AssetsPage() {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Unggah Berkas ke Akun Google Drive Pribadi</h3>
-              <button 
-                onClick={() => !isUploading && setIsModalOpen(false)} 
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
-              >
+              <button onClick={() => !isUploading && setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
                 <X size={18} />
               </button>
             </div>
@@ -288,7 +467,7 @@ export default function AssetsPage() {
                     onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
                   />
                   <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                    Dukungan format: .PNG, .SVG, .PDF, .MP4, .PSD, .AI, .ZIP
+                    Dukungan format: .PNG, .JPG, .SVG, .PDF, .MP4, .PSD, .AI, .ZIP
                   </span>
                 </div>
 
@@ -299,6 +478,7 @@ export default function AssetsPage() {
                     value={assetType}
                     onChange={(e) => setAssetType(e.target.value as any)}
                   >
+                    <option value="photo">Karya Desain / Foto Review</option>
                     <option value="logo">Logo & Identitas Visual</option>
                     <option value="document">Dokumen / PDF Panduan</option>
                     <option value="video">Rekaman Video & Motion</option>
@@ -308,19 +488,10 @@ export default function AssetsPage() {
               </div>
 
               <div className="modal-footer">
-                <button 
-                  type="button" 
-                  disabled={isUploading} 
-                  onClick={() => setIsModalOpen(false)} 
-                  className="btn btn-secondary"
-                >
+                <button type="button" disabled={isUploading} onClick={() => setIsModalOpen(false)} className="btn btn-secondary">
                   Batal
                 </button>
-                <button 
-                  type="submit" 
-                  disabled={isUploading || !selectedFile} 
-                  className="btn btn-primary"
-                >
+                <button type="submit" disabled={isUploading || !selectedFile} className="btn btn-primary">
                   {isUploading ? 'Sedang Mengunggah...' : 'Unggah ke Drive'}
                 </button>
               </div>

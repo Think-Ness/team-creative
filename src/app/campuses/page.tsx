@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Building2, Plus, Users, MapPin, Layers, X } from 'lucide-react';
+import { Building2, Plus, Users, MapPin, Layers, X, Edit3, Trash2 } from 'lucide-react';
 
 interface Campus {
   id: string;
@@ -54,23 +54,51 @@ const INITIAL_CAMPUSES: Campus[] = [
 export default function CampusesPage() {
   const [campuses, setCampuses] = useState<Campus[]>(INITIAL_CAMPUSES);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingCampus, setEditingCampus] = useState<Campus | null>(null);
+
   const [form, setForm] = useState({ name: '', code: '', city: '' });
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreateOrUpdate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) return;
 
-    const newCampus: Campus = {
-      id: String(Date.now()),
-      name: form.name,
-      code: form.code || 'CMP-01',
-      city: form.city || 'Indonesia',
-      units: [],
-    };
+    if (editingCampus) {
+      setCampuses(campuses.map(c => c.id === editingCampus.id ? {
+        ...c,
+        name: form.name,
+        code: form.code,
+        city: form.city,
+      } : c));
+      setEditingCampus(null);
+    } else {
+      const newCampus: Campus = {
+        id: String(Date.now()),
+        name: form.name,
+        code: form.code || `CMP-${campuses.length + 1}`,
+        city: form.city || 'Indonesia',
+        units: [],
+      };
+      setCampuses([...campuses, newCampus]);
+    }
 
-    setCampuses([...campuses, newCampus]);
     setIsModalOpen(false);
     setForm({ name: '', code: '', city: '' });
+  };
+
+  const startEdit = (campus: Campus) => {
+    setEditingCampus(campus);
+    setForm({
+      name: campus.name,
+      code: campus.code,
+      city: campus.city,
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = (id: string, name: string) => {
+    if (confirm(`Hapus kampus "${name}" beserta unitnya?`)) {
+      setCampuses(campuses.filter(c => c.id !== id));
+    }
   };
 
   return (
@@ -85,7 +113,14 @@ export default function CampusesPage() {
           </p>
         </div>
 
-        <button onClick={() => setIsModalOpen(true)} className="btn btn-primary">
+        <button 
+          onClick={() => {
+            setEditingCampus(null);
+            setForm({ name: '', code: '', city: '' });
+            setIsModalOpen(true);
+          }} 
+          className="btn btn-primary"
+        >
           <Plus size={16} /> Tambah Kampus
         </button>
       </div>
@@ -105,9 +140,26 @@ export default function CampusesPage() {
                   <MapPin size={12} /> {c.city}
                 </div>
               </div>
-              <span className="badge">
-                {c.units.length} Unit
-              </span>
+
+              <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                <span className="badge">
+                  {c.units.length} Unit
+                </span>
+                <button
+                  onClick={() => startEdit(c)}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '11px', padding: '3px 6px' }}
+                >
+                  <Edit3 size={12} />
+                </button>
+                <button
+                  onClick={() => handleDelete(c.id, c.name)}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '11px', padding: '3px 6px', color: 'var(--danger-color)' }}
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
             </div>
 
             <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 'var(--space-3)' }}>
@@ -149,13 +201,15 @@ export default function CampusesPage() {
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Daftarkan Kampus Jaringan Baru</h3>
+              <h3 style={{ fontSize: '16px', fontWeight: 600 }}>
+                {editingCampus ? 'Edit Data Kampus' : 'Daftarkan Kampus Jaringan Baru'}
+              </h3>
               <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleCreate}>
+            <form onSubmit={handleCreateOrUpdate}>
               <div className="modal-body">
                 <div className="form-group">
                   <label className="form-label">Nama Kampus / Fasilitas *</label>
@@ -199,7 +253,7 @@ export default function CampusesPage() {
                   Batal
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  Simpan Kampus
+                  {editingCampus ? 'Simpan Perubahan' : 'Simpan Kampus'}
                 </button>
               </div>
             </form>

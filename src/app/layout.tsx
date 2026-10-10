@@ -11,6 +11,8 @@ export const metadata: Metadata = {
   description: 'Internal Creative Collaboration & Media Management Web Application',
 };
 
+import AppProviders from '@/components/layout/AppProviders';
+
 export default function RootLayout({
   children,
 }: {
@@ -19,13 +21,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <div className="app-container">
-          <Sidebar />
-          <div className="main-content">
-            <Topbar />
-            <main className="page-content">{children}</main>
+        <AppProviders>
+          <div className="app-container">
+            <Sidebar />
+            <div className="main-content">
+              <Topbar />
+              <main className="page-content">{children}</main>
+            </div>
           </div>
-        </div>
+        </AppProviders>
       </body>
     </html>
   );

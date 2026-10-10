@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, CheckSquare, Clock, User, AlertCircle, X, ChevronRight } from 'lucide-react';
+import { Plus, CheckSquare, Clock, User, AlertCircle, X, Edit3, Trash2 } from 'lucide-react';
 
 interface Task {
   id: string;
@@ -77,10 +77,13 @@ const COLUMNS: { key: Task['status']; label: string }[] = [
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+
   const [form, setForm] = useState({
     title: '',
     description: '',
     project: 'Brand Refresh 2026',
+    status: 'todo' as Task['status'],
     priority: 'medium' as any,
     due_date: '',
     assignee: 'Budi Wicaksono',
@@ -90,27 +93,66 @@ export default function TasksPage() {
     setTasks(tasks.map(t => t.id === id ? { ...t, status: nextStatus } : t));
   };
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreateOrUpdate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title.trim()) return;
 
-    const newTask: Task = {
-      id: `t${Date.now()}`,
-      title: form.title,
-      description: form.description,
-      project: form.project,
-      status: 'todo',
-      priority: form.priority,
-      due_date: form.due_date || '2026-03-15',
-      assignee: form.assignee,
-    };
+    if (editingTask) {
+      setTasks(tasks.map(t => t.id === editingTask.id ? {
+        ...t,
+        title: form.title,
+        description: form.description,
+        project: form.project,
+        status: form.status,
+        priority: form.priority,
+        due_date: form.due_date || t.due_date,
+        assignee: form.assignee,
+      } : t));
+      setEditingTask(null);
+    } else {
+      const newTask: Task = {
+        id: `t${Date.now()}`,
+        title: form.title,
+        description: form.description,
+        project: form.project,
+        status: form.status,
+        priority: form.priority,
+        due_date: form.due_date || '2026-03-15',
+        assignee: form.assignee,
+      };
+      setTasks([...tasks, newTask]);
+    }
 
-    setTasks([...tasks, newTask]);
     setIsModalOpen(false);
+    resetForm();
+  };
+
+  const startEdit = (t: Task) => {
+    setEditingTask(t);
+    setForm({
+      title: t.title,
+      description: t.description,
+      project: t.project,
+      status: t.status,
+      priority: t.priority,
+      due_date: t.due_date,
+      assignee: t.assignee,
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = (id: string, title: string) => {
+    if (confirm(`Hapus tugas "${title}"?`)) {
+      setTasks(tasks.filter(t => t.id !== id));
+    }
+  };
+
+  const resetForm = () => {
     setForm({
       title: '',
       description: '',
       project: 'Brand Refresh 2026',
+      status: 'todo',
       priority: 'medium',
       due_date: '',
       assignee: 'Budi Wicaksono',
@@ -126,11 +168,18 @@ export default function TasksPage() {
             Tasks & Production Board
           </h1>
           <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            Papan Kanban alur pengerjaan tugas kreatif. Klik untuk memindahkan status tugas secara instan.
+            Papan Kanban alur pengerjaan tugas kreatif. Setiap tugas dapat diedit, dipindahkan status, atau dihapus.
           </p>
         </div>
 
-        <button onClick={() => setIsModalOpen(true)} className="btn btn-primary">
+        <button 
+          onClick={() => {
+            setEditingTask(null);
+            resetForm();
+            setIsModalOpen(true);
+          }} 
+          className="btn btn-primary"
+        >
           <Plus size={16} /> Tambah Tugas
         </button>
       </div>
@@ -152,9 +201,25 @@ export default function TasksPage() {
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500 }}>
                       {t.project}
                     </span>
-                    <span className="badge" style={{ fontSize: '10px', textTransform: 'uppercase' }}>
-                      {t.priority}
-                    </span>
+                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                      <span className="badge" style={{ fontSize: '10px', textTransform: 'uppercase' }}>
+                        {t.priority}
+                      </span>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); startEdit(t); }}
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '2px' }}
+                        title="Edit Tugas"
+                      >
+                        <Edit3 size={12} />
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleDelete(t.id, t.title); }}
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--danger-color)', padding: '2px' }}
+                        title="Hapus Tugas"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
                   </div>
 
                   <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.3 }}>
@@ -209,18 +274,20 @@ export default function TasksPage() {
         })}
       </div>
 
-      {/* Add Task Modal */}
+      {/* Add / Edit Task Modal */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Tambah Tugas Kreatif Baru</h3>
+              <h3 style={{ fontSize: '16px', fontWeight: 600 }}>
+                {editingTask ? 'Edit Data Tugas' : 'Tambah Tugas Kreatif Baru'}
+              </h3>
               <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleCreate}>
+            <form onSubmit={handleCreateOrUpdate}>
               <div className="modal-body">
                 <div className="form-group">
                   <label className="form-label">Judul Tugas *</label>
@@ -247,15 +314,16 @@ export default function TasksPage() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
                   <div className="form-group">
-                    <label className="form-label">Proyek Induk</label>
+                    <label className="form-label">Status Kolom</label>
                     <select
                       className="form-input"
-                      value={form.project}
-                      onChange={(e) => setForm({ ...form, project: e.target.value })}
+                      value={form.status}
+                      onChange={(e) => setForm({ ...form, status: e.target.value as any })}
                     >
-                      <option value="Brand Refresh 2026">Brand Refresh 2026</option>
-                      <option value="Ramadhan Campaign">Ramadhan Campaign</option>
-                      <option value="Editorial Sprint Q1">Editorial Sprint Q1</option>
+                      <option value="todo">To Do</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="review">In Review</option>
+                      <option value="done">Completed</option>
                     </select>
                   </div>
 
@@ -282,7 +350,7 @@ export default function TasksPage() {
                       value={form.assignee}
                       onChange={(e) => setForm({ ...form, assignee: e.target.value })}
                     >
-                      <option value="Budi Wicaksono">Budi Wicaksono (Design)</option>
+                      <option value="Budi Wicaksono">Budi Wicaksono (Desain)</option>
                       <option value="Reza Pratama">Reza Pratama (Video/Motion)</option>
                       <option value="Dewi Lestari">Dewi Lestari (Copywriting)</option>
                       <option value="Siti Sarah">Siti Sarah (Producer)</option>
@@ -306,7 +374,7 @@ export default function TasksPage() {
                   Batal
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  Buat Tugas
+                  {editingTask ? 'Simpan Perubahan' : 'Buat Tugas'}
                 </button>
               </div>
             </form>

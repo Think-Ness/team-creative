@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, FolderOpen, Calendar, User, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { Plus, FolderOpen, Calendar, User, Edit3, Trash2, X } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -67,6 +67,8 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [filter, setFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+
   const [form, setForm] = useState({
     name: '',
     code: '',
@@ -74,7 +76,9 @@ export default function ProjectsPage() {
     campus: 'Kampus Utama Jakarta',
     unit: 'Brand & Visual Identity',
     pm: 'Siti Sarah',
+    status: 'planning' as any,
     priority: 'medium' as any,
+    progress: 0,
     start_date: '',
     due_date: '',
   });
@@ -83,27 +87,72 @@ export default function ProjectsPage() {
     ? projects
     : projects.filter(p => p.status === filter);
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreateOrUpdate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) return;
 
-    const newProj: Project = {
-      id: `p${Date.now()}`,
-      name: form.name,
-      code: form.code || `PRJ-2026-${String(projects.length + 1).padStart(3, '0')}`,
-      description: form.description,
-      status: 'planning',
-      priority: form.priority,
-      start_date: form.start_date || '2026-03-01',
-      due_date: form.due_date || '2026-05-30',
-      campus: form.campus,
-      unit: form.unit,
-      pm: form.pm,
-      progress: 0,
-    };
+    if (editingProject) {
+      setProjects(projects.map(p => p.id === editingProject.id ? {
+        ...p,
+        name: form.name,
+        code: form.code,
+        description: form.description,
+        campus: form.campus,
+        unit: form.unit,
+        pm: form.pm,
+        status: form.status,
+        priority: form.priority,
+        progress: Number(form.progress) || 0,
+        due_date: form.due_date || p.due_date,
+      } : p));
+      setEditingProject(null);
+    } else {
+      const newProj: Project = {
+        id: `p${Date.now()}`,
+        name: form.name,
+        code: form.code || `PRJ-2026-${String(projects.length + 1).padStart(3, '0')}`,
+        description: form.description,
+        status: 'planning',
+        priority: form.priority,
+        start_date: form.start_date || '2026-03-01',
+        due_date: form.due_date || '2026-05-30',
+        campus: form.campus,
+        unit: form.unit,
+        pm: form.pm,
+        progress: 0,
+      };
+      setProjects([newProj, ...projects]);
+    }
 
-    setProjects([newProj, ...projects]);
     setIsModalOpen(false);
+    resetForm();
+  };
+
+  const startEdit = (proj: Project) => {
+    setEditingProject(proj);
+    setForm({
+      name: proj.name,
+      code: proj.code,
+      description: proj.description,
+      campus: proj.campus,
+      unit: proj.unit,
+      pm: proj.pm,
+      status: proj.status,
+      priority: proj.priority,
+      progress: proj.progress,
+      start_date: proj.start_date,
+      due_date: proj.due_date,
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = (id: string, name: string) => {
+    if (confirm(`Yakin ingin menghapus proyek "${name}"?`)) {
+      setProjects(projects.filter(p => p.id !== id));
+    }
+  };
+
+  const resetForm = () => {
     setForm({
       name: '',
       code: '',
@@ -111,7 +160,9 @@ export default function ProjectsPage() {
       campus: 'Kampus Utama Jakarta',
       unit: 'Brand & Visual Identity',
       pm: 'Siti Sarah',
+      status: 'planning',
       priority: 'medium',
+      progress: 0,
       start_date: '',
       due_date: '',
     });
@@ -130,7 +181,14 @@ export default function ProjectsPage() {
           </p>
         </div>
 
-        <button onClick={() => setIsModalOpen(true)} className="btn btn-primary">
+        <button 
+          onClick={() => {
+            setEditingProject(null);
+            resetForm();
+            setIsModalOpen(true);
+          }} 
+          className="btn btn-primary"
+        >
           <Plus size={16} /> Proyek Baru
         </button>
       </div>
@@ -187,7 +245,8 @@ export default function ProjectsPage() {
                 flexDirection: 'column', 
                 gap: 'var(--space-1)',
                 fontSize: '12px',
-                color: 'var(--text-secondary)'
+                color: 'var(--text-secondary)',
+                marginBottom: 'var(--space-3)'
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span>Unit: {p.unit}</span>
@@ -198,23 +257,43 @@ export default function ProjectsPage() {
                   <span>Tenggat: {p.due_date}</span>
                 </div>
               </div>
+
+              {/* Edit & Delete Action Buttons */}
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 'var(--space-2)', display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)' }}>
+                <button
+                  onClick={() => startEdit(p)}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '11px', padding: '4px 8px' }}
+                >
+                  <Edit3 size={12} /> Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(p.id, p.name)}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '11px', padding: '4px 8px', color: 'var(--danger-color)' }}
+                >
+                  <Trash2 size={12} /> Hapus
+                </button>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* New Project Modal */}
+      {/* New/Edit Project Modal */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Inisiasi Proyek Kreatif Baru</h3>
+              <h3 style={{ fontSize: '16px', fontWeight: 600 }}>
+                {editingProject ? 'Edit Data Proyek Kreatif' : 'Inisiasi Proyek Kreatif Baru'}
+              </h3>
               <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleCreate}>
+            <form onSubmit={handleCreateOrUpdate}>
               <div className="modal-body">
                 <div className="form-group">
                   <label className="form-label">Nama Proyek *</label>
@@ -242,12 +321,40 @@ export default function ProjectsPage() {
                 <div className="form-group">
                   <label className="form-label">Deskripsi & Tujuan</label>
                   <textarea
-                    rows={3}
+                    rows={2}
                     placeholder="Jelaskan output akhir dan ekspektasi capaian proyek..."
                     className="form-input"
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
                   />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                  <div className="form-group">
+                    <label className="form-label">Status Proyek</label>
+                    <select
+                      className="form-input"
+                      value={form.status}
+                      onChange={(e) => setForm({ ...form, status: e.target.value as any })}
+                    >
+                      <option value="planning">Planning</option>
+                      <option value="active">Active</option>
+                      <option value="on_hold">On Hold</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Progres Capaian (%)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      className="form-input"
+                      value={form.progress}
+                      onChange={(e) => setForm({ ...form, progress: Number(e.target.value) })}
+                    />
+                  </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
@@ -310,7 +417,7 @@ export default function ProjectsPage() {
                   Batal
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  Simpan Proyek
+                  {editingProject ? 'Simpan Perubahan' : 'Buat Proyek'}
                 </button>
               </div>
             </form>
