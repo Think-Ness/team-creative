@@ -1,7 +1,25 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Image as ImageIcon, Video, FileText, Send, Calendar, CheckCircle2, X, Edit3, Trash2, ExternalLink } from 'lucide-react';
+import { 
+  Plus, 
+  Image as ImageIcon, 
+  Video, 
+  FileText, 
+  Send, 
+  Calendar, 
+  CheckCircle2, 
+  X, 
+  Edit3, 
+  Trash2, 
+  ExternalLink,
+  Eye,
+  Copy,
+  Check,
+  MessageSquare,
+  Sparkles,
+  Link as LinkIcon
+} from 'lucide-react';
 import { usePersistentData } from '@/lib/usePersistentData';
 import DriveImageUploader from '@/components/common/DriveImageUploader';
 
@@ -15,6 +33,9 @@ interface ContentItem {
   author: string;
   version: number;
   image_url?: string;
+  caption?: string;
+  task_ref?: string;
+  qc_notes?: string;
 }
 
 const initialContent: ContentItem[] = [
@@ -27,6 +48,9 @@ const initialContent: ContentItem[] = [
     scheduled_at: '2026-02-15',
     author: 'Dewi Lestari',
     version: 2,
+    caption: 'Menyatukan karakter dan potensi seluruh kampus ke dalam satu harmoni visual. Simak 5 prinsip desain yang menjadi fondasi 6102 Creative System! #6102Creative #OneDirection',
+    task_ref: 'Finalisasi Color Palette & Typography Tokens (Figma)',
+    qc_notes: 'Layout dan typography sudah sesuai standar brand guidelines.',
   },
   {
     id: 'c1000000-0000-0000-0000-000000000002',
@@ -37,6 +61,9 @@ const initialContent: ContentItem[] = [
     scheduled_at: '2026-03-10',
     author: 'Reza Pratama',
     version: 1,
+    caption: 'Sebuah refleksi karya kolaborasi lintas kampus menyambut bulan suci Ramadhan. Saksikan tayangan perdana serial Behind The Canvas!',
+    task_ref: 'Storyboard & Animatic Teaser Ramadhan 30 Detik',
+    qc_notes: 'Tone audio intro perlu dinaikkan +1.5dB agar vokal narator lebih tegas.',
   },
   {
     id: 'c1000000-0000-0000-0000-000000000003',
@@ -47,6 +74,8 @@ const initialContent: ContentItem[] = [
     scheduled_at: '2026-03-04',
     author: 'Reza Pratama',
     version: 1,
+    caption: 'Bocoran dapur kreatif kita saat merancang logo panggung gembira! Gimana menurut kalian? Drop comment di bawah! 👇🔥',
+    task_ref: 'Export Vector Logo Asset Kit (.SVG, .EPS, .PNG)',
   },
   {
     id: 'c1000000-0000-0000-0000-000000000004',
@@ -57,14 +86,22 @@ const initialContent: ContentItem[] = [
     scheduled_at: '2026-03-15',
     author: 'Dewi Lestari',
     version: 1,
+    caption: 'Dokumentasi komprehensif mengenai peluncuran ekosistem digital dan alur kerja kurasi terpusat 6102 Creative System.',
+    task_ref: 'Draft Copywriting 10 Carousel Tren Desain AI',
   },
 ];
 
 export default function ContentPage() {
   const { data: items, addItem, updateItem, deleteItem } = usePersistentData<ContentItem>('content', initialContent);
+  const { data: tasks } = usePersistentData<any>('tasks', []);
   const [channelFilter, setChannelFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ContentItem | null>(null);
+
+  // Review & Detail Modal
+  const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
+  const [copiedCaption, setCopiedCaption] = useState(false);
+  const [qcNoteInput, setQcNoteInput] = useState('');
 
   const [form, setForm] = useState({
     title: '',
@@ -75,6 +112,8 @@ export default function ContentPage() {
     author: 'Dewi Lestari',
     version: 1,
     image_url: '',
+    caption: '',
+    task_ref: '',
   });
 
   const filtered = channelFilter === 'all'
@@ -95,6 +134,8 @@ export default function ContentPage() {
         author: form.author,
         version: Number(form.version) || editingItem.version,
         image_url: form.image_url,
+        caption: form.caption,
+        task_ref: form.task_ref,
       });
       setEditingItem(null);
     } else {
@@ -108,12 +149,21 @@ export default function ContentPage() {
         author: form.author,
         version: 1,
         image_url: form.image_url,
+        caption: form.caption,
+        task_ref: form.task_ref,
       };
       addItem(newItem);
     }
 
     setIsModalOpen(false);
     resetForm();
+  };
+
+  const handleSaveQcNote = (contentId: string) => {
+    updateItem(contentId, { qc_notes: qcNoteInput });
+    if (selectedContent && selectedContent.id === contentId) {
+      setSelectedContent({ ...selectedContent, qc_notes: qcNoteInput });
+    }
   };
 
   const startEdit = (item: ContentItem) => {
@@ -127,6 +177,8 @@ export default function ContentPage() {
       author: item.author,
       version: item.version,
       image_url: item.image_url || '',
+      caption: item.caption || '',
+      task_ref: item.task_ref || '',
     });
     setIsModalOpen(true);
   };
@@ -147,6 +199,8 @@ export default function ContentPage() {
       author: 'Dewi Lestari',
       version: 1,
       image_url: '',
+      caption: '',
+      task_ref: '',
     });
   };
 
@@ -205,15 +259,26 @@ export default function ContentPage() {
           </thead>
           <tbody>
             {filtered.map((c) => (
-              <tr key={c.id}>
+              <tr 
+                key={c.id}
+                onClick={() => { setSelectedContent(c); setQcNoteInput(c.qc_notes || ''); }}
+                style={{ cursor: 'pointer' }}
+              >
                 <td>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     {c.image_url && (
                       <img src={c.image_url} alt={c.title} style={{ width: '36px', height: '36px', borderRadius: '4px', objectFit: 'cover', border: '1px solid #e2e8f0' }} />
                     )}
-                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                      {c.title}
-                    </span>
+                    <div>
+                      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {c.title}
+                      </div>
+                      {c.task_ref && (
+                        <div style={{ fontSize: '11px', color: '#1d4ed8' }}>
+                          Terkait: {c.task_ref}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </td>
                 <td>
@@ -239,7 +304,14 @@ export default function ContentPage() {
                   {c.author}
                 </td>
                 <td style={{ textAlign: 'right' }}>
-                  <div style={{ display: 'inline-flex', gap: 'var(--space-1)' }}>
+                  <div style={{ display: 'inline-flex', gap: 'var(--space-1)' }} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => { setSelectedContent(c); setQcNoteInput(c.qc_notes || ''); }}
+                      className="btn btn-secondary"
+                      style={{ fontSize: '11px', padding: '3px 6px', display: 'flex', alignItems: 'center', gap: '3px' }}
+                    >
+                      <Eye size={11} /> Review
+                    </button>
                     <button
                       onClick={() => startEdit(c)}
                       className="btn btn-secondary"
@@ -287,6 +359,37 @@ export default function ContentPage() {
                     value={form.title}
                     onChange={(e) => setForm({ ...form, title: e.target.value })}
                   />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <LinkIcon size={13} /> Terhubung dengan Tugas Kanban (Opsional)
+                  </label>
+                  <select
+                    className="form-input"
+                    value={form.task_ref}
+                    onChange={(e) => {
+                      const selectedT = tasks.find((t: any) => t.title === e.target.value);
+                      if (selectedT) {
+                        setForm({
+                          ...form,
+                          task_ref: selectedT.title,
+                          title: form.title || selectedT.title,
+                          author: selectedT.assignee || form.author,
+                          image_url: form.image_url || selectedT.image_url || '',
+                        });
+                      } else {
+                        setForm({ ...form, task_ref: e.target.value });
+                      }
+                    }}
+                  >
+                    <option value="">-- Tanpa Kaitan Tugas --</option>
+                    {tasks.map((t: any) => (
+                      <option key={t.id} value={t.title}>
+                        {t.title} ({t.assignee} - {t.project || 'Umum'})
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
@@ -373,6 +476,17 @@ export default function ContentPage() {
                   </div>
                 </div>
 
+                <div className="form-group">
+                  <label className="form-label">Naskah Copywriting & Caption Media Sosial</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Tuliskan hook headline, narasi konten, dan tagar resmi..."
+                    className="form-input"
+                    value={form.caption}
+                    onChange={(e) => setForm({ ...form, caption: e.target.value })}
+                  />
+                </div>
+
                 <DriveImageUploader
                   label="Upload Gambar / Desain Cover Konten (Google Drive)"
                   currentImageUrl={form.image_url}
@@ -389,6 +503,255 @@ export default function ContentPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Content Review & Deliverable Modal */}
+      {selectedContent && (
+        <div className="modal-overlay" onClick={() => setSelectedContent(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '750px', width: '90%' }}>
+            <div className="modal-header">
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <span className="badge" style={{ textTransform: 'capitalize' }}>
+                    {selectedContent.channel} • {selectedContent.format.replace('_', ' ')}
+                  </span>
+                  <span className={`status-pill status-${selectedContent.status}`}>
+                    {selectedContent.status.replace('_', ' ').toUpperCase()}
+                  </span>
+                  <span style={{ fontFamily: 'monospace', fontSize: '11px', color: 'var(--text-muted)' }}>
+                    v{selectedContent.version}.0
+                  </span>
+                </div>
+                <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  {selectedContent.title}
+                </h3>
+              </div>
+              <button onClick={() => setSelectedContent(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+              {/* Media Preview (Photo or Drive Video Embed) */}
+              <div style={{ marginBottom: 'var(--space-4)' }}>
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {selectedContent.format === 'video' || selectedContent.format === 'short_video' ? (
+                    <Video size={14} />
+                  ) : (
+                    <ImageIcon size={14} />
+                  )}
+                  Hasil Produksi / Media Review
+                </label>
+
+                {selectedContent.image_url ? (
+                  <div style={{ 
+                    borderRadius: '6px', 
+                    overflow: 'hidden', 
+                    border: '1px solid var(--border-color)', 
+                    backgroundColor: '#000',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
+                  }}>
+                    {selectedContent.image_url.includes('drive.google.com') ? (
+                      <iframe
+                        src={selectedContent.image_url.replace('/view?usp=sharing', '/preview').replace('/view', '/preview')}
+                        style={{ width: '100%', height: '340px', border: 'none' }}
+                        allow="autoplay"
+                        title={selectedContent.title}
+                      />
+                    ) : (
+                      <img 
+                        src={selectedContent.image_url} 
+                        alt={selectedContent.title} 
+                        style={{ maxHeight: '340px', width: '100%', objectFit: 'contain' }} 
+                      />
+                    )}
+
+                    <div style={{ 
+                      width: '100%', 
+                      padding: '8px 12px', 
+                      backgroundColor: 'var(--surface-color)', 
+                      borderTop: '1px solid var(--border-color)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        Google Drive Media Deliverable
+                      </span>
+                      <a 
+                        href={selectedContent.image_url} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="btn btn-secondary"
+                        style={{ fontSize: '11px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <ExternalLink size={12} /> Buka di Drive
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ 
+                    padding: '20px', 
+                    textAlign: 'center', 
+                    backgroundColor: '#f8fafc', 
+                    borderRadius: '6px', 
+                    border: '1px dashed var(--border-color)',
+                    color: 'var(--text-secondary)',
+                    fontSize: '12px'
+                  }}>
+                    Belum ada media foto/video yang diunggah untuk konten ini.
+                  </div>
+                )}
+
+                <div style={{ marginTop: '8px' }}>
+                  <DriveImageUploader
+                    label="Unggah / Ganti Media Konten (Google Drive)"
+                    currentImageUrl={selectedContent.image_url}
+                    onImageUploaded={(url) => {
+                      updateItem(selectedContent.id, { image_url: url });
+                      setSelectedContent({ ...selectedContent, image_url: url });
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Creator & Schedule Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+                <div style={{ padding: '10px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Kreator / Penulis</div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '2px' }}>{selectedContent.author}</div>
+                </div>
+                <div style={{ padding: '10px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Jadwal Rilis</div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '2px' }}>{selectedContent.scheduled_at}</div>
+                </div>
+                <div style={{ padding: '10px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Terkait Tugas</div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#1d4ed8', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {selectedContent.task_ref || 'Non-Task'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Caption Section */}
+              <div style={{ marginBottom: 'var(--space-4)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label className="form-label" style={{ marginBottom: 0 }}>Naskah Copywriting & Caption Publikasi</label>
+                  {selectedContent.caption && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(selectedContent.caption || '');
+                        setCopiedCaption(true);
+                        setTimeout(() => setCopiedCaption(false), 2000);
+                      }}
+                      className="btn btn-secondary"
+                      style={{ fontSize: '11px', padding: '2px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      {copiedCaption ? <Check size={12} color="#059669" /> : <Copy size={12} />}
+                      {copiedCaption ? 'Tersalin!' : 'Salin Caption'}
+                    </button>
+                  )}
+                </div>
+                <div style={{ 
+                  fontSize: '13px', 
+                  lineHeight: 1.6, 
+                  color: 'var(--text-primary)', 
+                  backgroundColor: 'var(--surface-color)', 
+                  padding: '12px', 
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-color)',
+                  whiteSpace: 'pre-wrap'
+                }}>
+                  {selectedContent.caption || 'Belum ada naskah caption ditulis.'}
+                </div>
+              </div>
+
+              {/* QC Feedback Section */}
+              <div style={{ marginBottom: 'var(--space-4)' }}>
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <MessageSquare size={14} /> Catatan Telaah Kurasi / QC Notes
+                </label>
+                <textarea
+                  rows={2}
+                  className="form-input"
+                  placeholder="Tuliskan evaluasi kualitas visual, audio, atau narasi..."
+                  value={qcNoteInput}
+                  onChange={(e) => setQcNoteInput(e.target.value)}
+                  style={{ marginBottom: '6px' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleSaveQcNote(selectedContent.id)}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '11px', padding: '4px 10px' }}
+                >
+                  Simpan Catatan QC
+                </button>
+              </div>
+
+              {/* Status Workflow Action */}
+              <div>
+                <label className="form-label">Alur Status Konten</label>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {(['draft', 'in_production', 'in_review', 'approved', 'published'] as const).map((st) => (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => {
+                        updateItem(selectedContent.id, { status: st });
+                        setSelectedContent({ ...selectedContent, status: st });
+                      }}
+                      className={`btn ${selectedContent.status === st ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ fontSize: '11px', padding: '4px 10px', textTransform: 'capitalize' }}
+                    >
+                      {st.replace('_', ' ')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const cToEdit = selectedContent;
+                    setSelectedContent(null);
+                    startEdit(cToEdit);
+                  }}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '12px' }}
+                >
+                  <Edit3 size={13} /> Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleDelete(selectedContent.id, selectedContent.title);
+                    setSelectedContent(null);
+                  }}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '12px', color: 'var(--danger-color)' }}
+                >
+                  <Trash2 size={13} /> Hapus
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedContent(null)}
+                className="btn btn-primary"
+                style={{ fontSize: '12px' }}
+              >
+                Tutup
+              </button>
+            </div>
           </div>
         </div>
       )}

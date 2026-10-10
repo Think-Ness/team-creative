@@ -159,9 +159,9 @@ export default function RequestsPage() {
     updateItem(id, { status: newStatus });
   };
 
-  const handleConvertToProject = (idea: Idea) => {
+  const handleConvertToProject = async (idea: Idea) => {
     try {
-      const storageKey = '6102_projects_data';
+      const storageKey = '6102_data_projects';
       let existingProjects: any[] = [];
       const saved = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
       if (saved) {
@@ -171,11 +171,57 @@ export default function RequestsPage() {
           existingProjects = [];
         }
       }
+      if (!existingProjects || existingProjects.length === 0) {
+        existingProjects = [
+          {
+            id: 'p0000000-0000-0000-0000-000000000001',
+            name: 'Annual Brand Refresh & Design System 2026',
+            code: 'PRJ-2026-001',
+            description: 'Standardisasi visual seluruh media sosial, banner, merchandise, dan booklet resmi.',
+            status: 'active',
+            priority: 'high',
+            start_date: '2026-02-01',
+            due_date: '2026-04-30',
+            campus: 'Kampus Utama Jakarta',
+            unit: 'Brand & Visual Identity',
+            pm: 'Siti Sarah',
+            progress: 65,
+          },
+          {
+            id: 'p0000000-0000-0000-0000-000000000002',
+            name: 'Ramadhan Creative Campaign: Berbagi Cahaya',
+            code: 'PRJ-2026-002',
+            description: 'Produksi serial video renungan harian dan visual quote bertema Ramadhan.',
+            status: 'planning',
+            priority: 'urgent',
+            start_date: '2026-03-01',
+            due_date: '2026-03-25',
+            campus: 'Kampus Bandung Hub',
+            unit: 'Motion Graphics & 3D Lab',
+            pm: 'Siti Sarah',
+            progress: 25,
+          },
+          {
+            id: 'p0000000-0000-0000-0000-000000000003',
+            name: 'Social Media Daily Editorial Sprint Q1',
+            code: 'PRJ-2026-003',
+            description: 'Eksekusi 30 konten edukatif, infografis tren teknologi, dan showcase karya mahasiswa.',
+            status: 'active',
+            priority: 'medium',
+            start_date: '2026-01-15',
+            due_date: '2026-03-31',
+            campus: 'Kampus Utama Jakarta',
+            unit: 'Digital Publishing & Copy',
+            pm: 'Dewi Lestari',
+            progress: 80,
+          },
+        ];
+      }
 
       // Check if project already exists
       const existing = existingProjects.find((p: any) => p.name.toLowerCase() === idea.title.toLowerCase());
       if (existing) {
-        router.push('/projects');
+        router.push(`/projects?created_id=${existing.id}`);
         return;
       }
 
@@ -202,6 +248,18 @@ export default function RequestsPage() {
         window.dispatchEvent(new Event('storage'));
       }
 
+      // Sync to API
+      try {
+        await fetch('/api/data/projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newProject),
+        });
+      } catch (e) {
+        console.warn('API sync project skipped:', e);
+      }
+
+      updateStatus(idea.id, 'accepted');
       router.push(`/projects?created_id=${newProjectId}`);
     } catch (err) {
       console.error('Failed to convert to project:', err);

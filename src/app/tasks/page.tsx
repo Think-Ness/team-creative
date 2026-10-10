@@ -1,7 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, CheckSquare, Clock, User, AlertCircle, X, Edit3, Trash2, ExternalLink } from 'lucide-react';
+import { 
+  Plus, 
+  CheckSquare, 
+  Clock, 
+  User, 
+  AlertCircle, 
+  X, 
+  Edit3, 
+  Trash2, 
+  ExternalLink,
+  Eye,
+  MessageSquare,
+  Folder,
+  CheckCircle2,
+  Video,
+  Image as ImageIcon
+} from 'lucide-react';
 import { usePersistentData } from '@/lib/usePersistentData';
 import DriveImageUploader from '@/components/common/DriveImageUploader';
 
@@ -15,6 +31,8 @@ interface Task {
   due_date: string;
   assignee: string;
   image_url?: string;
+  media_type?: 'image' | 'video' | 'link';
+  notes?: string;
 }
 
 const initialTasks: Task[] = [
@@ -83,6 +101,17 @@ export default function TasksPage() {
   const [projectFilter, setProjectFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  
+  // Detail and Review modal
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [reviewNote, setReviewNote] = useState('');
+
+  const handleSaveReviewNote = (taskId: string) => {
+    updateItem(taskId, { notes: reviewNote });
+    if (selectedTask && selectedTask.id === taskId) {
+      setSelectedTask({ ...selectedTask, notes: reviewNote });
+    }
+  };
 
   const [form, setForm] = useState({
     title: '',
@@ -239,7 +268,12 @@ export default function TasksPage() {
               </div>
 
               {colTasks.map((t) => (
-                <div key={t.id} className="kanban-card">
+                <div 
+                  key={t.id} 
+                  className="kanban-card"
+                  onClick={() => { setSelectedTask(t); setReviewNote(t.notes || ''); }}
+                  style={{ cursor: 'pointer' }}
+                >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
                     <span style={{ fontSize: '11px', color: '#1d4ed8', backgroundColor: '#eff6ff', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
                       {t.project || 'Tugas Umum'}
@@ -248,6 +282,13 @@ export default function TasksPage() {
                       <span className="badge" style={{ fontSize: '10px', textTransform: 'uppercase' }}>
                         {t.priority}
                       </span>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setSelectedTask(t); setReviewNote(t.notes || ''); }}
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '2px' }}
+                        title="Review & Detail Tugas"
+                      >
+                        <Eye size={12} />
+                      </button>
                       <button 
                         onClick={(e) => { e.stopPropagation(); startEdit(t); }}
                         style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '2px' }}
@@ -279,6 +320,12 @@ export default function TasksPage() {
                     {t.description}
                   </p>
 
+                  {t.notes && (
+                    <div style={{ fontSize: '11px', color: '#4338ca', backgroundColor: '#eef2ff', padding: '4px 6px', borderRadius: '4px', margin: '4px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <MessageSquare size={11} /> Catatan: {t.notes.substring(0, 40)}...
+                    </div>
+                  )}
+
                   <div style={{ 
                     display: 'flex', 
                     justifyContent: 'space-between', 
@@ -298,7 +345,7 @@ export default function TasksPage() {
                   </div>
 
                   {/* Move status action pills */}
-                  <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+                  <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }} onClick={(e) => e.stopPropagation()}>
                     {col.key !== 'todo' && (
                       <button 
                         onClick={() => moveStatus(t.id, col.key === 'done' ? 'review' : col.key === 'review' ? 'in_progress' : 'todo')}
@@ -449,6 +496,231 @@ export default function TasksPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Task Detail & Deliverable Review Modal */}
+      {selectedTask && (
+        <div className="modal-overlay" onClick={() => setSelectedTask(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px', width: '90%' }}>
+            <div className="modal-header">
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '11px', color: '#1d4ed8', backgroundColor: '#eff6ff', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>
+                    {selectedTask.project || 'Tugas Umum'}
+                  </span>
+                  <span className={`badge ${
+                    selectedTask.status === 'done' ? 'badge-success' :
+                    selectedTask.status === 'review' ? 'badge-warning' :
+                    selectedTask.status === 'in_progress' ? 'badge-info' : 'badge-neutral'
+                  }`}>
+                    {selectedTask.status.toUpperCase()}
+                  </span>
+                  <span className={`badge ${
+                    selectedTask.priority === 'urgent' ? 'badge-danger' :
+                    selectedTask.priority === 'high' ? 'badge-warning' : 'badge-neutral'
+                  }`}>
+                    {selectedTask.priority}
+                  </span>
+                </div>
+                <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  {selectedTask.title}
+                </h3>
+              </div>
+              <button onClick={() => setSelectedTask(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+              {/* Media Preview & Review Section */}
+              <div style={{ marginBottom: 'var(--space-4)' }}>
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <ImageIcon size={14} /> Deliverable / Hasil Kerja (Lampiran)
+                </label>
+
+                {selectedTask.image_url ? (
+                  <div style={{ 
+                    borderRadius: '6px', 
+                    overflow: 'hidden', 
+                    border: '1px solid var(--border-color)', 
+                    backgroundColor: '#000',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
+                  }}>
+                    <img 
+                      src={selectedTask.image_url} 
+                      alt={selectedTask.title} 
+                      style={{ maxHeight: '320px', width: '100%', objectFit: 'contain' }} 
+                    />
+                    <div style={{ 
+                      width: '100%', 
+                      padding: '8px 12px', 
+                      backgroundColor: 'var(--surface-color)', 
+                      borderTop: '1px solid var(--border-color)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        Disimpan di Google Drive Cloud Storage
+                      </span>
+                      <a 
+                        href={selectedTask.image_url} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="btn btn-secondary"
+                        style={{ fontSize: '11px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <ExternalLink size={12} /> Buka Asli
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ 
+                    padding: '16px', 
+                    textAlign: 'center', 
+                    backgroundColor: '#f8fafc', 
+                    borderRadius: '6px', 
+                    border: '1px dashed var(--border-color)',
+                    color: 'var(--text-secondary)',
+                    fontSize: '12px'
+                  }}>
+                    Belum ada lampiran visual / hasil kerja diunggah untuk tugas ini.
+                  </div>
+                )}
+
+                {/* Upload or change attachment */}
+                <div style={{ marginTop: '8px' }}>
+                  <DriveImageUploader
+                    label="Unggah / Perbarui File Hasil Pengerjaan (Google Drive)"
+                    currentImageUrl={selectedTask.image_url}
+                    onImageUploaded={(url) => {
+                      updateItem(selectedTask.id, { image_url: url });
+                      setSelectedTask({ ...selectedTask, image_url: url });
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Assignment & Deadline Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+                <div style={{ padding: '10px 12px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Penanggung Jawab (PJ)</div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <User size={14} /> {selectedTask.assignee}
+                  </div>
+                </div>
+
+                <div style={{ padding: '10px 12px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Tenggat Waktu</div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Clock size={14} /> {selectedTask.due_date}
+                  </div>
+                </div>
+              </div>
+
+              {/* Description & Instruction */}
+              <div style={{ marginBottom: 'var(--space-4)' }}>
+                <label className="form-label">Deskripsi & Instruksi Pengerjaan</label>
+                <div style={{ 
+                  fontSize: '13px', 
+                  lineHeight: 1.6, 
+                  color: 'var(--text-primary)', 
+                  backgroundColor: 'var(--surface-color)', 
+                  padding: '12px', 
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-color)'
+                }}>
+                  {selectedTask.description || 'Tidak ada deskripsi rinci.'}
+                </div>
+              </div>
+
+              {/* Review Feedback Section */}
+              <div style={{ marginBottom: 'var(--space-4)' }}>
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <MessageSquare size={14} /> Catatan Telaah & Masukan Review Tim
+                </label>
+                <textarea
+                  rows={2}
+                  className="form-input"
+                  placeholder="Berikan masukan koreksi revisi visual atau arahan..."
+                  value={reviewNote}
+                  onChange={(e) => setReviewNote(e.target.value)}
+                  style={{ marginBottom: '6px' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleSaveReviewNote(selectedTask.id)}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '11px', padding: '4px 10px' }}
+                >
+                  Simpan Catatan Review
+                </button>
+              </div>
+
+              {/* Quick Status Workflow Action */}
+              <div>
+                <label className="form-label">Ubah Alur Status Tugas</label>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {(['todo', 'in_progress', 'review', 'done'] as const).map((st) => (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => {
+                        moveStatus(selectedTask.id, st);
+                        setSelectedTask({ ...selectedTask, status: st });
+                      }}
+                      className={`btn ${selectedTask.status === st ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ fontSize: '11px', padding: '4px 10px', textTransform: 'capitalize' }}
+                    >
+                      {st === 'todo' ? 'To Do' :
+                       st === 'in_progress' ? 'In Progress' :
+                       st === 'review' ? 'Ajukan Review' : 'Selesai (Done)'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const taskToEdit = selectedTask;
+                    setSelectedTask(null);
+                    startEdit(taskToEdit);
+                  }}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '12px' }}
+                >
+                  <Edit3 size={13} /> Edit Data Tugas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleDelete(selectedTask.id, selectedTask.title);
+                    setSelectedTask(null);
+                  }}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '12px', color: 'var(--danger-color)' }}
+                >
+                  <Trash2 size={13} /> Hapus
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedTask(null)}
+                className="btn btn-primary"
+                style={{ fontSize: '12px' }}
+              >
+                Tutup
+              </button>
+            </div>
           </div>
         </div>
       )}

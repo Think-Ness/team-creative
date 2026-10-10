@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { 
   Calendar as CalendarIcon, 
   ChevronLeft, 
@@ -13,9 +14,13 @@ import {
   X, 
   Check, 
   Filter, 
-  Layers,
-  CalendarDays,
-  List
+  Layers, 
+  CalendarDays, 
+  List, 
+  ExternalLink, 
+  Sparkles, 
+  User, 
+  Building2 
 } from 'lucide-react';
 import { usePersistentData } from '@/lib/usePersistentData';
 
@@ -28,6 +33,20 @@ interface CalendarEvent {
   project: string;
   description?: string;
   assignee?: string;
+}
+
+interface MergedCalendarEvent {
+  id: string;
+  date: string;
+  title: string;
+  type: 'publish' | 'deadline' | 'event';
+  channel?: string;
+  project: string;
+  description?: string;
+  assignee?: string;
+  source: string;
+  sourceLink?: string;
+  isManual?: boolean;
 }
 
 const INITIAL_EVENTS: CalendarEvent[] = [
@@ -49,7 +68,11 @@ const MONTH_NAMES = [
 const DAYS_HEADER = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
 
 export default function CalendarPage() {
-  const { data: events, addItem, deleteItem } = usePersistentData<CalendarEvent>('calendar_events', INITIAL_EVENTS);
+  const { data: manualEvents, addItem, deleteItem } = usePersistentData<CalendarEvent>('calendar_events', INITIAL_EVENTS);
+  const { data: tasks } = usePersistentData<any>('tasks', []);
+  const { data: projects } = usePersistentData<any>('projects', []);
+  const { data: contentItems } = usePersistentData<any>('content', []);
+  const { data: productionEvents } = usePersistentData<any>('events', []);
 
   // Active Month & Year (Default: Maret 2026)
   const [currentYear, setCurrentYear] = useState(2026);
@@ -59,7 +82,7 @@ export default function CalendarPage() {
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<MergedCalendarEvent | null>(null);
 
   // Form State
   const [newTitle, setNewTitle] = useState('');
@@ -68,6 +91,61 @@ export default function CalendarPage() {
   const [newProject, setNewProject] = useState('Ramadhan Campaign');
   const [newChannel, setNewChannel] = useState('Instagram');
   const [newAssignee, setNewAssignee] = useState('Budi Wicaksono');
+  const [newDescription, setNewDescription] = useState('');
+
+  // Synthesize events across entire ecosystem (Centralized Calendar Aggregation)
+  const allEvents: MergedCalendarEvent[] = [
+    ...manualEvents.map(e => ({ 
+      ...e, 
+      source: 'Agenda Manual', 
+      isManual: true 
+    })),
+    ...tasks.filter((t: any) => t.due_date).map((t: any) => ({
+      id: `task-${t.id}`,
+      date: t.due_date,
+      title: `[Tugas] ${t.title}`,
+      type: 'deadline' as const,
+      project: t.project || 'Tugas Umum',
+      assignee: t.assignee || 'Tim 6102',
+      description: t.description || 'Tenggat penyelesaian deliverable di Kanban board.',
+      source: 'Tugas Kanban',
+      sourceLink: `/tasks?project=${encodeURIComponent(t.project || '')}`,
+    })),
+    ...projects.filter((p: any) => p.due_date).map((p: any) => ({
+      id: `proj-${p.id}`,
+      date: p.due_date,
+      title: `[Proyek] ${p.name}`,
+      type: 'deadline' as const,
+      project: p.name,
+      assignee: p.pm || 'Project Manager',
+      description: p.description || 'Target penyelesaian proyek utama.',
+      source: 'Proyek',
+      sourceLink: '/projects',
+    })),
+    ...contentItems.filter((c: any) => c.scheduled_at).map((c: any) => ({
+      id: `content-${c.id}`,
+      date: c.scheduled_at,
+      title: `[Tayang] ${c.title}`,
+      type: 'publish' as const,
+      channel: c.channel,
+      project: c.task_ref || 'Sosial Media',
+      assignee: c.author || 'Tim Konten',
+      description: c.caption || 'Jadwal publikasi konten ke media sosial.',
+      source: 'Konten Pipeline',
+      sourceLink: '/content',
+    })),
+    ...productionEvents.filter((e: any) => e.date).map((e: any) => ({
+      id: `event-${e.id}`,
+      date: e.date,
+      title: `[Event] ${e.title}`,
+      type: 'event' as const,
+      project: e.campus || 'Acara Kampus',
+      assignee: e.lead || 'Tim Event',
+      description: e.description || 'Pelaksanaan kegiatan / liputan event kampus.',
+      source: 'Event Produksi',
+      sourceLink: '/events',
+    })),
+  ];
 
   // Month navigation handlers
   const handlePrevMonth = () => {
@@ -101,7 +179,7 @@ export default function CalendarPage() {
   const totalGridCells = Math.ceil((daysInMonth + startDayOffset) / 7) * 7;
 
   // Filter events
-  const filteredEvents = events.filter((ev) => {
+  const filteredEvents = allEvents.filter((ev) => {
     if (filterType !== 'all' && ev.type !== filterType) return false;
     return true;
   });
@@ -123,14 +201,53 @@ export default function CalendarPage() {
       project: newProject,
       channel: newType === 'publish' ? newChannel : undefined,
       assignee: newAssignee.trim() || 'Tim 6102',
+      description: newDescription,
     };
 
     addItem(newEv);
     setIsModalOpen(false);
     setNewTitle('');
+    setNewDescription('');
   };
 
-  const getBadgeStyle = (type: CalendarEvent['type']) => {
+  const handleAutoFillFromModule = (sourceVal: string) => {
+    if (!sourceVal) return;
+    const [prefix, id] = sourceVal.split('::');
+    if (prefix === 'task') {
+      const t = tasks.find((item: any) => item.id === id);
+      if (t) {
+        setNewTitle(`Tenggat: ${t.title}`);
+        setNewDate(t.due_date || '2026-03-15');
+        setNewType('deadline');
+        setNewProject(t.project || 'Tugas Umum');
+        setNewAssignee(t.assignee || 'Tim 6102');
+        setNewDescription(t.description || '');
+      }
+    } else if (prefix === 'project') {
+      const p = projects.find((item: any) => item.id === id);
+      if (p) {
+        setNewTitle(`Milestone: ${p.name}`);
+        setNewDate(p.due_date || '2026-03-30');
+        setNewType('deadline');
+        setNewProject(p.name);
+        setNewAssignee(p.pm || 'Project Manager');
+        setNewDescription(p.description || '');
+      }
+    } else if (prefix === 'content') {
+      const c = contentItems.find((item: any) => item.id === id);
+      if (c) {
+        setNewTitle(`Tayang: ${c.title}`);
+        setNewDate(c.scheduled_at || '2026-03-15');
+        setNewType('publish');
+        setNewChannel(c.channel === 'instagram' ? 'Instagram' : c.channel === 'youtube' ? 'YouTube' : 'TikTok');
+        setNewProject(c.task_ref || 'Sosial Media');
+        setNewAssignee(c.author || 'Tim Konten');
+        setNewDescription(c.caption || '');
+      }
+    }
+  };
+
+  const getBadgeStyle = (type: MergedCalendarEvent['type']) => {
     switch (type) {
       case 'publish':
         return { backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' };
@@ -143,210 +260,214 @@ export default function CalendarPage() {
 
   return (
     <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
-      
-      {/* Top Header & Action Controls */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
+      {/* Page Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-6)' }}>
         <div>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-            <span className="status-pill status-active" style={{ fontSize: '11px', padding: '2px 8px' }}>
-              6102 Production Timeline
-            </span>
-          </div>
-          <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-            Kalender Editorial & Agenda Rilis 6102
+          <h1 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>
+            Production Calendar & Agenda Terpadu
           </h1>
-          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            Plotting visual seluruh jadwal tayang Instagram, tenggat tugas divisi, dan agenda kreatif multi-kampus.
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+            Sinkronisasi jadwal otomatis dari seluruh tenggat tugas, jadwal rilis konten medsos, dan event angkatan.
           </p>
         </div>
 
-        {/* View Switcher & Add Button */}
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="btn btn-primary"
+          style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}
+        >
+          <Plus size={16} />
+          Plot Agenda Manual
+        </button>
+      </div>
+
+      {/* Control Bar: Month Switcher, View Switcher & Filters */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: 'var(--space-4)',
+        flexWrap: 'wrap',
+        gap: 'var(--space-3)'
+      }}>
+        {/* Month Navigator */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '6px' }}>
+            <button 
+              onClick={handlePrevMonth}
+              style={{ background: 'none', border: 'none', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+              title="Bulan Sebelumnya"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', padding: '0 8px', minWidth: '130px', textAlign: 'center' }}>
+              {MONTH_NAMES[currentMonthIndex]} {currentYear}
+            </span>
+            <button 
+              onClick={handleNextMonth}
+              style={{ background: 'none', border: 'none', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+              title="Bulan Berikutnya"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          <button 
+            onClick={handleResetToday}
+            className="btn btn-secondary" 
+            style={{ fontSize: '12px', padding: '6px 12px' }}
+          >
+            Hari Ini
+          </button>
+        </div>
+
+        {/* View Mode Toggle & Filter Type */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          <div style={{ display: 'flex', backgroundColor: '#f1f5f9', borderRadius: '6px', padding: '2px' }}>
+          {/* Category Filter Pills */}
+          <div className="filter-group" style={{ margin: 0 }}>
+            <button 
+              className={`filter-btn ${filterType === 'all' ? 'active' : ''}`}
+              onClick={() => setFilterType('all')}
+              style={{ fontSize: '12px', padding: '4px 10px' }}
+            >
+              Semua ({allEvents.length})
+            </button>
+            <button 
+              className={`filter-btn ${filterType === 'publish' ? 'active' : ''}`}
+              onClick={() => setFilterType('publish')}
+              style={{ fontSize: '12px', padding: '4px 10px' }}
+            >
+              Tayang Medsos
+            </button>
+            <button 
+              className={`filter-btn ${filterType === 'deadline' ? 'active' : ''}`}
+              onClick={() => setFilterType('deadline')}
+              style={{ fontSize: '12px', padding: '4px 10px' }}
+            >
+              Tenggat Tugas
+            </button>
+            <button 
+              className={`filter-btn ${filterType === 'event' ? 'active' : ''}`}
+              onClick={() => setFilterType('event')}
+              style={{ fontSize: '12px', padding: '4px 10px' }}
+            >
+              Event
+            </button>
+          </div>
+
+          {/* View Mode */}
+          <div style={{ display: 'flex', border: '1px solid var(--border-color)', borderRadius: '6px', overflow: 'hidden' }}>
             <button
               onClick={() => setViewMode('grid')}
-              style={{
+              style={{ 
+                padding: '6px 10px', 
+                border: 'none', 
+                background: viewMode === 'grid' ? 'var(--text-primary)' : 'var(--surface-color)',
+                color: viewMode === 'grid' ? '#fff' : 'var(--text-secondary)',
+                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
-                padding: '6px 12px',
-                border: 'none',
-                borderRadius: '4px',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                backgroundColor: viewMode === 'grid' ? '#ffffff' : 'transparent',
-                color: viewMode === 'grid' ? '#0f172a' : '#64748b',
-                boxShadow: viewMode === 'grid' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                gap: '4px',
+                fontSize: '12px'
               }}
             >
-              <CalendarDays size={14} /> Kalender Grid
+              <CalendarDays size={14} /> Kalender
             </button>
             <button
               onClick={() => setViewMode('list')}
-              style={{
+              style={{ 
+                padding: '6px 10px', 
+                border: 'none', 
+                background: viewMode === 'list' ? 'var(--text-primary)' : 'var(--surface-color)',
+                color: viewMode === 'list' ? '#fff' : 'var(--text-secondary)',
+                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
-                padding: '6px 12px',
-                border: 'none',
-                borderRadius: '4px',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                backgroundColor: viewMode === 'list' ? '#ffffff' : 'transparent',
-                color: viewMode === 'list' ? '#0f172a' : '#64748b',
-                boxShadow: viewMode === 'list' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                gap: '4px',
+                fontSize: '12px'
               }}
             >
               <List size={14} /> Daftar List
             </button>
           </div>
-
-          <button
-            onClick={() => {
-              setNewDate(`${currentYear}-${String(currentMonthIndex + 1).padStart(2, '0')}-15`);
-              setIsModalOpen(true);
-            }}
-            className="btn btn-primary"
-            style={{ fontSize: '13px', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px' }}
-          >
-            <Plus size={16} /> Tambah Agenda
-          </button>
         </div>
       </div>
 
-      {/* Month Navigator & Type Filters */}
-      <div className="card" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-            <div style={{ display: 'flex', gap: '4px' }}>
-              <button 
-                onClick={handlePrevMonth}
-                className="btn btn-secondary" 
-                style={{ padding: '6px 10px', fontSize: '12px' }}
-                title="Bulan Sebelumnya"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <button 
-                onClick={handleNextMonth}
-                className="btn btn-secondary" 
-                style={{ padding: '6px 10px', fontSize: '12px' }}
-                title="Bulan Berikutnya"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', margin: 0, minWidth: '160px' }}>
-              {MONTH_NAMES[currentMonthIndex]} {currentYear}
-            </h2>
-
-            <button 
-              onClick={handleResetToday}
-              className="btn btn-secondary" 
-              style={{ fontSize: '12px', padding: '4px 10px' }}
-            >
-              Bulan Ini
-            </button>
-          </div>
-
-          {/* Type Filters */}
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginRight: '4px' }}>Filter:</span>
-            {[
-              { id: 'all', label: 'Semua' },
-              { id: 'publish', label: 'Rilis Konten' },
-              { id: 'deadline', label: 'Tenggat Tugas' },
-              { id: 'event', label: 'Event Kampus' },
-            ].map(f => (
-              <button
-                key={f.id}
-                onClick={() => setFilterType(f.id)}
-                className={`btn ${filterType === f.id ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ fontSize: '11px', padding: '4px 10px' }}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-
-        </div>
-      </div>
-
-      {/* VIEW MODE 1: REAL CALENDAR GRID */}
+      {/* VIEW MODE 1: GRID VIEW (7 Days per row) */}
       {viewMode === 'grid' && (
-        <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border-color)', width: '100%', tableLayout: 'fixed' as any }}>
-          
-          {/* Days of week header */}
+        <div style={{ 
+          backgroundColor: 'var(--surface-color)', 
+          border: '1px solid var(--border-color)', 
+          borderRadius: '8px', 
+          overflow: 'hidden',
+          width: '100%'
+        }}>
+          {/* Days of Week Header */}
           <div style={{ 
             display: 'grid', 
             gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', 
-            backgroundColor: '#f8fafc', 
             borderBottom: '1px solid var(--border-color)',
-            textAlign: 'center',
-            fontSize: '12px',
-            fontWeight: 600,
-            color: 'var(--text-secondary)',
-            width: '100%',
+            backgroundColor: '#f8fafc',
+            width: '100%'
           }}>
             {DAYS_HEADER.map((day, idx) => (
-              <div key={day} style={{ 
-                padding: '10px 4px', 
-                borderRight: idx < 6 ? '1px solid var(--border-color)' : 'none',
-                color: idx === 5 || idx === 6 ? '#2563eb' : 'inherit',
-                minWidth: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-              }}>
+              <div 
+                key={day} 
+                style={{ 
+                  padding: '10px 4px', 
+                  textAlign: 'center', 
+                  fontSize: '12px', 
+                  fontWeight: 600, 
+                  color: idx >= 5 ? '#ef4444' : 'var(--text-secondary)',
+                  borderRight: idx < 6 ? '1px solid var(--border-color)' : 'none',
+                  minWidth: 0,
+                  overflow: 'hidden'
+                }}
+              >
                 {day}
               </div>
             ))}
           </div>
 
-          {/* 7-column calendar day cells */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', width: '100%' }}>
+          {/* Calendar Grid Cells */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+            width: '100%'
+          }}>
             {Array.from({ length: totalGridCells }).map((_, index) => {
               const dayNumber = index - startDayOffset + 1;
-              const isCurrentMonthDay = dayNumber > 0 && dayNumber <= daysInMonth;
-              const dayEvents = isCurrentMonthDay ? getEventsForDay(dayNumber) : [];
-              const isToday = isCurrentMonthDay && dayNumber === 15 && currentMonthIndex === 2 && currentYear === 2026;
+              const isCurrentMonth = dayNumber > 0 && dayNumber <= daysInMonth;
+              const dayEvents = isCurrentMonth ? getEventsForDay(dayNumber) : [];
+              const isToday = isCurrentMonth && dayNumber === 11 && currentMonthIndex === 2 && currentYear === 2026;
 
               return (
                 <div
                   key={index}
-                  onClick={() => {
-                    if (isCurrentMonthDay) {
-                      setNewDate(`${currentYear}-${String(currentMonthIndex + 1).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`);
-                      setIsModalOpen(true);
-                    }
-                  }}
                   style={{
                     minHeight: '115px',
                     padding: '8px',
+                    backgroundColor: isCurrentMonth ? (isToday ? '#f0f9ff' : 'var(--surface-color)') : '#f8fafc',
+                    borderRight: (index + 1) % 7 !== 0 ? '1px solid var(--border-color)' : 'none',
+                    borderBottom: '1px solid var(--border-color)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    opacity: isCurrentMonth ? 1 : 0.45,
                     minWidth: 0,
-                    overflow: 'hidden',
-                    boxSizing: 'border-box',
-                    borderRight: (index + 1) % 7 !== 0 ? '1px solid #e2e8f0' : 'none',
-                    borderBottom: '1px solid #e2e8f0',
-                    backgroundColor: isCurrentMonthDay ? '#ffffff' : '#f8fafc',
-                    cursor: isCurrentMonthDay ? 'pointer' : 'default',
-                    transition: 'background-color 0.15s ease',
+                    overflow: 'hidden'
                   }}
                 >
-                  {isCurrentMonthDay && (
+                  {isCurrentMonth && (
                     <>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                        <span style={{
-                          fontSize: '13px',
-                          fontWeight: isToday ? 700 : 500,
-                          color: isToday ? '#ffffff' : '#0f172a',
-                          backgroundColor: isToday ? '#0f172a' : 'transparent',
-                          width: '24px',
-                          height: '24px',
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px', minWidth: 0 }}>
+                        <span style={{ 
+                          fontSize: '12px', 
+                          fontWeight: isToday ? 700 : 500, 
+                          color: isToday ? '#0284c7' : 'var(--text-primary)',
+                          backgroundColor: isToday ? '#e0f2fe' : 'transparent',
+                          width: '22px',
+                          height: '22px',
                           borderRadius: '50%',
                           display: 'flex',
                           alignItems: 'center',
@@ -357,13 +478,13 @@ export default function CalendarPage() {
                         </span>
                         {dayEvents.length > 0 && (
                           <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                            {dayEvents.length} agenda
+                            {dayEvents.length}
                           </span>
                         )}
                       </div>
 
                       {/* Event Chips plotted on this day */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0, overflow: 'hidden' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, overflow: 'hidden' }}>
                         {dayEvents.slice(0, 3).map((ev) => {
                           const badge = getBadgeStyle(ev.type);
                           return (
@@ -375,9 +496,9 @@ export default function CalendarPage() {
                               }}
                               style={{
                                 ...badge,
-                                padding: '3px 6px',
-                                borderRadius: '4px',
-                                fontSize: '11px',
+                                padding: '2px 5px',
+                                borderRadius: '3px',
+                                fontSize: '10.5px',
                                 fontWeight: 500,
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',
@@ -386,11 +507,11 @@ export default function CalendarPage() {
                                 display: 'block',
                                 minWidth: 0,
                               }}
-                              title={`${ev.title} (${ev.project}) • PIC: ${ev.assignee || 'Tim 6102'}`}
+                              title={`${ev.title} (${ev.project}) • PIC: ${ev.assignee || 'Tim 6102'} • Sumber: ${ev.source}`}
                             >
                               <span>{ev.title}</span>
                               {ev.assignee && (
-                                <span style={{ opacity: 0.75, fontSize: '10px', marginLeft: '4px' }}>
+                                <span style={{ opacity: 0.75, fontSize: '9.5px', marginLeft: '3px' }}>
                                   ({ev.assignee})
                                 </span>
                               )}
@@ -399,7 +520,7 @@ export default function CalendarPage() {
                         })}
                         {dayEvents.length > 3 && (
                           <span style={{ fontSize: '10px', color: '#2563eb', fontWeight: 500 }}>
-                            +{dayEvents.length - 3} agenda lagi
+                            +{dayEvents.length - 3} agenda
                           </span>
                         )}
                       </div>
@@ -409,115 +530,196 @@ export default function CalendarPage() {
               );
             })}
           </div>
-
         </div>
       )}
 
       {/* VIEW MODE 2: LIST VIEW */}
       {viewMode === 'list' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          {filteredEvents.map((ev) => {
-            const badge = getBadgeStyle(ev.type);
-            return (
-              <div 
-                key={ev.id} 
-                className="card"
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between', 
-                  padding: '14px 18px',
-                  borderLeft: `4px solid ${ev.type === 'publish' ? '#2563eb' : ev.type === 'deadline' ? '#dc2626' : '#16a34a'}`
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div style={{ 
+          {filteredEvents.length === 0 ? (
+            <div className="card" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-secondary)' }}>
+              Tidak ada agenda atau jadwal produksi untuk kategori yang dipilih.
+            </div>
+          ) : (
+            filteredEvents.map((ev) => {
+              const badge = getBadgeStyle(ev.type);
+              return (
+                <div 
+                  key={ev.id} 
+                  className="card"
+                  onClick={() => setSelectedEvent(ev)}
+                  style={{ 
                     display: 'flex', 
-                    flexDirection: 'column', 
                     alignItems: 'center', 
-                    justifyContent: 'center', 
-                    backgroundColor: '#f1f5f9',
-                    borderRadius: '6px',
-                    width: '54px',
-                    height: '54px',
-                  }}>
-                    <span style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>{ev.date.split('-')[2]}</span>
-                    <span style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase' }}>
-                      {MONTH_NAMES[parseInt(ev.date.split('-')[1], 10) - 1]?.slice(0, 3)}
-                    </span>
-                  </div>
-
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                      <span style={{ ...badge, fontSize: '10px', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase', fontWeight: 600 }}>
-                        {ev.type === 'publish' ? 'Tayang Medsos' : ev.type === 'deadline' ? 'Tenggat Tugas' : 'Event'}
+                    justifyContent: 'space-between', 
+                    padding: '12px 16px',
+                    borderLeft: `4px solid ${ev.type === 'publish' ? '#2563eb' : ev.type === 'deadline' ? '#dc2626' : '#16a34a'}`,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      backgroundColor: '#f1f5f9',
+                      borderRadius: '6px', 
+                      width: '50px', 
+                      height: '50px',
+                      flexShrink: 0
+                    }}>
+                      <span style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>{ev.date.split('-')[2]}</span>
+                      <span style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase' }}>
+                        {MONTH_NAMES[parseInt(ev.date.split('-')[1], 10) - 1]?.slice(0, 3)}
                       </span>
-                      {ev.channel && <span className="badge">{ev.channel}</span>}
-                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>• {ev.project}</span>
-                      {ev.assignee && (
-                        <span style={{ fontSize: '11px', color: '#334155', backgroundColor: '#f1f5f9', padding: '1px 6px', borderRadius: '4px', fontWeight: 500 }}>
-                          PIC: {ev.assignee}
-                        </span>
-                      )}
                     </div>
 
-                    <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
-                      {ev.title}
-                    </h3>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px', flexWrap: 'wrap' }}>
+                        <span style={{ ...badge, fontSize: '10px', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase', fontWeight: 600 }}>
+                          {ev.type === 'publish' ? 'Tayang Medsos' : ev.type === 'deadline' ? 'Tenggat Tugas' : 'Event'}
+                        </span>
+                        <span style={{ fontSize: '10px', padding: '2px 6px', backgroundColor: '#e2e8f0', color: '#334155', borderRadius: '4px', fontWeight: 600 }}>
+                          {ev.source}
+                        </span>
+                        {ev.channel && <span className="badge" style={{ fontSize: '10px' }}>{ev.channel}</span>}
+                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>• {ev.project}</span>
+                        {ev.assignee && (
+                          <span style={{ fontSize: '11px', color: '#334155', backgroundColor: '#f1f5f9', padding: '1px 6px', borderRadius: '4px', fontWeight: 500 }}>
+                            PIC: {ev.assignee}
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {ev.title}
+                      </h3>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => setSelectedEvent(ev)}
+                      className="btn btn-secondary"
+                      style={{ fontSize: '11px', padding: '4px 10px' }}
+                    >
+                      Detail
+                    </button>
+                    {ev.isManual && (
+                      <button 
+                        onClick={() => deleteItem(ev.id)}
+                        className="btn btn-secondary" 
+                        style={{ fontSize: '11px', color: 'var(--danger-color)', padding: '4px 8px' }}
+                      >
+                        Hapus
+                      </button>
+                    )}
                   </div>
                 </div>
-
-                <button 
-                  onClick={() => deleteItem(ev.id)}
-                  className="btn btn-secondary" 
-                  style={{ fontSize: '11px', color: 'var(--danger-color)', padding: '4px 8px' }}
-                >
-                  Hapus
-                </button>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       )}
 
-      {/* Modal Detail Agenda */}
+      {/* Modal Detail Agenda Terpadu */}
       {selectedEvent && (
         <div className="modal-overlay" onClick={() => setSelectedEvent(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '560px', width: '90%' }}>
             <div className="modal-header">
-              <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Rincian Agenda Ploting</h3>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                  <span style={{ ...getBadgeStyle(selectedEvent.type), fontSize: '10px', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase', fontWeight: 600 }}>
+                    {selectedEvent.type === 'publish' ? 'Tayang Medsos' : selectedEvent.type === 'deadline' ? 'Tenggat Tugas' : 'Event'}
+                  </span>
+                  <span style={{ fontSize: '10px', padding: '2px 6px', backgroundColor: '#e2e8f0', color: '#334155', borderRadius: '4px', fontWeight: 600 }}>
+                    {selectedEvent.source}
+                  </span>
+                </div>
+                <h3 style={{ fontSize: '17px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  {selectedEvent.title}
+                </h3>
+              </div>
               <button onClick={() => setSelectedEvent(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
                 <X size={18} />
               </button>
             </div>
-            <div className="modal-body" style={{ padding: 'var(--space-5)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <span className={`status-pill ${selectedEvent.type === 'publish' ? 'status-active' : 'status-draft'}`} style={{ fontSize: '11px' }}>
-                  {selectedEvent.type.toUpperCase()}
-                </span>
-                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Tanggal: <strong>{selectedEvent.date}</strong></span>
+
+            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+              {/* Structured Metadata Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: 'var(--space-4)' }}>
+                <div style={{ padding: '10px 12px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Tanggal Pelaksanaan / Tenggat</div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '2px' }}>
+                    {selectedEvent.date}
+                  </div>
+                </div>
+
+                <div style={{ padding: '10px 12px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Penanggung Jawab (PIC)</div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '2px' }}>
+                    {selectedEvent.assignee || 'Tim 6102'}
+                  </div>
+                </div>
+
+                <div style={{ padding: '10px 12px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Terkait Proyek</div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '2px' }}>
+                    {selectedEvent.project || '-'}
+                  </div>
+                </div>
+
+                <div style={{ padding: '10px 12px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Kanal Publikasi / Saluran</div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '2px' }}>
+                    {selectedEvent.channel || 'Internal Team'}
+                  </div>
+                </div>
               </div>
-              <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
-                {selectedEvent.title}
-              </h2>
-              <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>
-                Terkait Proyek: <strong>{selectedEvent.project}</strong><br />
-                Penanggung Jawab (PIC): <strong>{selectedEvent.assignee || 'Tim 6102'}</strong><br />
-                {selectedEvent.channel && <>Kanal Publikasi: <strong>{selectedEvent.channel}</strong><br /></>}
-              </p>
+
+              {/* Description & Instruction */}
+              <div>
+                <label className="form-label">Keterangan & Rincian Agenda</label>
+                <div style={{ 
+                  fontSize: '13px', 
+                  lineHeight: 1.6, 
+                  color: 'var(--text-primary)', 
+                  backgroundColor: 'var(--surface-color)', 
+                  padding: '12px', 
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-color)'
+                }}>
+                  {selectedEvent.description || 'Tidak ada deskripsi rinci untuk agenda ini.'}
+                </div>
+              </div>
             </div>
-            <div className="modal-footer">
-              <button 
-                onClick={() => {
-                  deleteItem(selectedEvent.id);
-                  setSelectedEvent(null);
-                }} 
-                className="btn btn-secondary" 
-                style={{ color: 'var(--danger-color)' }}
-              >
-                Hapus Agenda
-              </button>
-              <button onClick={() => setSelectedEvent(null)} className="btn btn-primary">
+
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                {selectedEvent.sourceLink ? (
+                  <Link
+                    href={selectedEvent.sourceLink}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <ExternalLink size={13} /> Buka di Modul {selectedEvent.source}
+                  </Link>
+                ) : selectedEvent.isManual ? (
+                  <button 
+                    onClick={() => {
+                      deleteItem(selectedEvent.id);
+                      setSelectedEvent(null);
+                    }} 
+                    className="btn btn-secondary" 
+                    style={{ color: 'var(--danger-color)', fontSize: '12px' }}
+                  >
+                    Hapus Agenda
+                  </button>
+                ) : null}
+              </div>
+
+              <button onClick={() => setSelectedEvent(null)} className="btn btn-primary" style={{ fontSize: '12px' }}>
                 Tutup
               </button>
             </div>
@@ -525,10 +727,10 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* Modal Tambah Agenda Baru */}
+      {/* Modal Plot Agenda Baru ke Kalender (dengan Auto-Fill) */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '540px' }}>
             <div className="modal-header">
               <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Plot Agenda Baru ke Kalender</h3>
               <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
@@ -537,8 +739,44 @@ export default function CalendarPage() {
             </div>
             <form onSubmit={handleAddEvent}>
               <div className="modal-body">
+                {/* Auto Fill Selector */}
+                <div className="form-group" style={{ backgroundColor: '#f8fafc', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#1d4ed8' }}>
+                    <Sparkles size={13} /> Auto-Fill dari Modul Lain (Otomatis Isi Data)
+                  </label>
+                  <select
+                    className="form-input"
+                    defaultValue=""
+                    onChange={(e) => handleAutoFillFromModule(e.target.value)}
+                    style={{ fontSize: '12px' }}
+                  >
+                    <option value="">-- Ketik Manual (Agenda Bebas) --</option>
+                    <optgroup label="Tugas Kanban">
+                      {tasks.map((t: any) => (
+                        <option key={t.id} value={`task::${t.id}`}>
+                          Task: {t.title} ({t.due_date || 'No Date'})
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Proyek Utama">
+                      {projects.map((p: any) => (
+                        <option key={p.id} value={`project::${p.id}`}>
+                          Proyek: {p.name} ({p.due_date || 'No Date'})
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Konten Pipeline">
+                      {contentItems.map((c: any) => (
+                        <option key={c.id} value={`content::${c.id}`}>
+                          Konten: {c.title} ({c.scheduled_at || 'No Date'})
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
+                </div>
+
                 <div className="form-group">
-                  <label className="form-label">Judul Agenda / Nama Konten</label>
+                  <label className="form-label">Judul Agenda / Nama Konten *</label>
                   <input
                     type="text"
                     required
@@ -551,7 +789,7 @@ export default function CalendarPage() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
                   <div className="form-group">
-                    <label className="form-label">Tanggal Ploting</label>
+                    <label className="form-label">Tanggal Ploting *</label>
                     <input
                       type="date"
                       required
@@ -613,6 +851,17 @@ export default function CalendarPage() {
                     </select>
                   </div>
                 )}
+
+                <div className="form-group">
+                  <label className="form-label">Catatan / Deskripsi Tambahan</label>
+                  <textarea
+                    rows={2}
+                    className="form-input"
+                    placeholder="Catatan rundown atau instruksi pengerjaan..."
+                    value={newDescription}
+                    onChange={(e) => setNewDescription(e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="modal-footer">
@@ -627,7 +876,6 @@ export default function CalendarPage() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
