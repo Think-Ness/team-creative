@@ -11,8 +11,7 @@ import {
   Image as ImageIcon,
   CheckCircle,
   Activity,
-  Settings,
-  inbox
+  Settings
 } from 'lucide-react';
 
 export default function Sidebar() {
