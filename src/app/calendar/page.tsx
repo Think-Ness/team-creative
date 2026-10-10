@@ -27,17 +27,18 @@ interface CalendarEvent {
   channel?: string;
   project: string;
   description?: string;
+  assignee?: string;
 }
 
 const INITIAL_EVENTS: CalendarEvent[] = [
-  { id: 'ev-1', date: '2026-03-02', title: 'Tenggat Copywriting 10 Carousel Tren AI', type: 'deadline', project: 'Editorial Sprint Q1' },
-  { id: 'ev-2', date: '2026-03-04', title: 'Tayang Reels: Behind The Design Process', type: 'publish', channel: 'Instagram', project: 'Editorial Sprint Q1' },
-  { id: 'ev-3', date: '2026-03-05', title: 'Tenggat Booklet Brand Guidelines 2026', type: 'deadline', project: 'Brand Refresh 2026' },
-  { id: 'ev-4', date: '2026-03-10', title: 'Tayang Video Teaser: Sambut Ramadhan 1448H', type: 'publish', channel: 'YouTube', project: 'Ramadhan Campaign' },
-  { id: 'ev-5', date: '2026-03-15', title: 'Rilis Artikel Web: Identitas Baru 6102', type: 'publish', channel: 'Website', project: 'Brand Refresh 2026' },
-  { id: 'ev-6', date: '2026-03-20', title: 'Event Kampus: Workshop Visual Creative Bandung', type: 'event', project: 'Bandung Creative Hub' },
-  { id: 'ev-7', date: '2026-03-25', title: 'Peluncuran Logo Panggung Gembira (PG 6102)', type: 'publish', channel: 'Instagram', project: 'Panggung Gembira 6102' },
-  { id: 'ev-8', date: '2026-03-28', title: 'Review Akhir Produksi Musik & Jingle 6102', type: 'deadline', project: 'Divisi Musik 6102' },
+  { id: 'ev-1', date: '2026-03-02', title: 'Tenggat Copywriting 10 Carousel Tren AI', type: 'deadline', project: 'Editorial Sprint Q1', assignee: 'Dewi Lestari' },
+  { id: 'ev-2', date: '2026-03-04', title: 'Tayang Reels: Behind The Design Process', type: 'publish', channel: 'Instagram', project: 'Editorial Sprint Q1', assignee: 'Budi Santoso' },
+  { id: 'ev-3', date: '2026-03-05', title: 'Tenggat Booklet Brand Guidelines 2026', type: 'deadline', project: 'Brand Refresh 2026', assignee: 'Budi Wicaksono' },
+  { id: 'ev-4', date: '2026-03-10', title: 'Tayang Video Teaser: Sambut Ramadhan 1448H', type: 'publish', channel: 'YouTube', project: 'Ramadhan Campaign', assignee: 'Reza Pratama' },
+  { id: 'ev-5', date: '2026-03-15', title: 'Rilis Artikel Web: Identitas Baru 6102', type: 'publish', channel: 'Website', project: 'Brand Refresh 2026', assignee: 'Ahmad Fauzi' },
+  { id: 'ev-6', date: '2026-03-20', title: 'Event Kampus: Workshop Visual Creative Bandung', type: 'event', project: 'Bandung Creative Hub', assignee: 'Siti Sarah' },
+  { id: 'ev-7', date: '2026-03-25', title: 'Peluncuran Logo Panggung Gembira (PG 6102)', type: 'publish', channel: 'Instagram', project: 'Panggung Gembira 6102', assignee: 'Ahmad Fauzi' },
+  { id: 'ev-8', date: '2026-03-28', title: 'Review Akhir Produksi Musik & Jingle 6102', type: 'deadline', project: 'Divisi Musik 6102', assignee: 'Hendra Wijaya' },
 ];
 
 const MONTH_NAMES = [
@@ -66,6 +67,7 @@ export default function CalendarPage() {
   const [newType, setNewType] = useState<'publish' | 'deadline' | 'event'>('publish');
   const [newProject, setNewProject] = useState('Ramadhan Campaign');
   const [newChannel, setNewChannel] = useState('Instagram');
+  const [newAssignee, setNewAssignee] = useState('Budi Wicaksono');
 
   // Month navigation handlers
   const handlePrevMonth = () => {
@@ -120,6 +122,7 @@ export default function CalendarPage() {
       type: newType,
       project: newProject,
       channel: newType === 'publish' ? newChannel : undefined,
+      assignee: newAssignee.trim() || 'Tim 6102',
     };
 
     addItem(newEv);
@@ -275,24 +278,29 @@ export default function CalendarPage() {
 
       {/* VIEW MODE 1: REAL CALENDAR GRID */}
       {viewMode === 'grid' && (
-        <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+        <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border-color)', width: '100%', tableLayout: 'fixed' as any }}>
           
           {/* Days of week header */}
           <div style={{ 
             display: 'grid', 
-            gridTemplateColumns: 'repeat(7, 1fr)', 
+            gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', 
             backgroundColor: '#f8fafc', 
             borderBottom: '1px solid var(--border-color)',
             textAlign: 'center',
             fontSize: '12px',
             fontWeight: 600,
-            color: 'var(--text-secondary)'
+            color: 'var(--text-secondary)',
+            width: '100%',
           }}>
             {DAYS_HEADER.map((day, idx) => (
               <div key={day} style={{ 
                 padding: '10px 4px', 
                 borderRight: idx < 6 ? '1px solid var(--border-color)' : 'none',
-                color: idx === 5 || idx === 6 ? '#2563eb' : 'inherit'
+                color: idx === 5 || idx === 6 ? '#2563eb' : 'inherit',
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
               }}>
                 {day}
               </div>
@@ -300,7 +308,7 @@ export default function CalendarPage() {
           </div>
 
           {/* 7-column calendar day cells */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', width: '100%' }}>
             {Array.from({ length: totalGridCells }).map((_, index) => {
               const dayNumber = index - startDayOffset + 1;
               const isCurrentMonthDay = dayNumber > 0 && dayNumber <= daysInMonth;
@@ -317,8 +325,11 @@ export default function CalendarPage() {
                     }
                   }}
                   style={{
-                    minHeight: '110px',
+                    minHeight: '115px',
                     padding: '8px',
+                    minWidth: 0,
+                    overflow: 'hidden',
+                    boxSizing: 'border-box',
                     borderRight: (index + 1) % 7 !== 0 ? '1px solid #e2e8f0' : 'none',
                     borderBottom: '1px solid #e2e8f0',
                     backgroundColor: isCurrentMonthDay ? '#ffffff' : '#f8fafc',
@@ -340,18 +351,19 @@ export default function CalendarPage() {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
+                          flexShrink: 0
                         }}>
                           {dayNumber}
                         </span>
                         {dayEvents.length > 0 && (
-                          <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>
+                          <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, whiteSpace: 'nowrap' }}>
                             {dayEvents.length} agenda
                           </span>
                         )}
                       </div>
 
                       {/* Event Chips plotted on this day */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0, overflow: 'hidden' }}>
                         {dayEvents.slice(0, 3).map((ev) => {
                           const badge = getBadgeStyle(ev.type);
                           return (
@@ -371,10 +383,17 @@ export default function CalendarPage() {
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 cursor: 'pointer',
+                                display: 'block',
+                                minWidth: 0,
                               }}
-                              title={`${ev.title} (${ev.project})`}
+                              title={`${ev.title} (${ev.project}) • PIC: ${ev.assignee || 'Tim 6102'}`}
                             >
-                              {ev.title}
+                              <span>{ev.title}</span>
+                              {ev.assignee && (
+                                <span style={{ opacity: 0.75, fontSize: '10px', marginLeft: '4px' }}>
+                                  ({ev.assignee})
+                                </span>
+                              )}
                             </div>
                           );
                         })}
@@ -435,6 +454,11 @@ export default function CalendarPage() {
                       </span>
                       {ev.channel && <span className="badge">{ev.channel}</span>}
                       <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>• {ev.project}</span>
+                      {ev.assignee && (
+                        <span style={{ fontSize: '11px', color: '#334155', backgroundColor: '#f1f5f9', padding: '1px 6px', borderRadius: '4px', fontWeight: 500 }}>
+                          PIC: {ev.assignee}
+                        </span>
+                      )}
                     </div>
 
                     <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
@@ -478,6 +502,7 @@ export default function CalendarPage() {
               </h2>
               <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>
                 Terkait Proyek: <strong>{selectedEvent.project}</strong><br />
+                Penanggung Jawab (PIC): <strong>{selectedEvent.assignee || 'Tim 6102'}</strong><br />
                 {selectedEvent.channel && <>Kanal Publikasi: <strong>{selectedEvent.channel}</strong><br /></>}
               </p>
             </div>
@@ -561,22 +586,33 @@ export default function CalendarPage() {
                     />
                   </div>
 
-                  {newType === 'publish' && (
-                    <div className="form-group">
-                      <label className="form-label">Kanal Publikasi</label>
-                      <select
-                        className="form-input"
-                        value={newChannel}
-                        onChange={(e) => setNewChannel(e.target.value)}
-                      >
-                        <option value="Instagram">Instagram 6102</option>
-                        <option value="YouTube">YouTube</option>
-                        <option value="TikTok">TikTok</option>
-                        <option value="Website">Website</option>
-                      </select>
-                    </div>
-                  )}
+                  <div className="form-group">
+                    <label className="form-label">Penanggung Jawab (PIC)</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={newAssignee}
+                      onChange={(e) => setNewAssignee(e.target.value)}
+                      placeholder="Nama PIC (contoh: Budi, Reza)"
+                    />
+                  </div>
                 </div>
+
+                {newType === 'publish' && (
+                  <div className="form-group">
+                    <label className="form-label">Kanal Publikasi</label>
+                    <select
+                      className="form-input"
+                      value={newChannel}
+                      onChange={(e) => setNewChannel(e.target.value)}
+                    >
+                      <option value="Instagram">Instagram 6102</option>
+                      <option value="YouTube">YouTube</option>
+                      <option value="TikTok">TikTok</option>
+                      <option value="Website">Website</option>
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div className="modal-footer">

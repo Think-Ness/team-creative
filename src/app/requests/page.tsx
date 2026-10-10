@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Plus, Filter, Check, X, ArrowRight, DollarSign, Users, Clock, Edit3, Trash2, ExternalLink } from 'lucide-react';
 import { usePersistentData } from '@/lib/usePersistentData';
 import DriveImageUploader from '@/components/common/DriveImageUploader';
@@ -67,6 +68,7 @@ const initialIdeas: Idea[] = [
 ];
 
 export default function RequestsPage() {
+  const router = useRouter();
   const { data: ideas, addItem, updateItem, deleteItem } = usePersistentData<Idea>('requests', initialIdeas);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -155,6 +157,56 @@ export default function RequestsPage() {
 
   const updateStatus = (id: string, newStatus: Idea['status']) => {
     updateItem(id, { status: newStatus });
+  };
+
+  const handleConvertToProject = (idea: Idea) => {
+    try {
+      const storageKey = '6102_projects_data';
+      let existingProjects: any[] = [];
+      const saved = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
+      if (saved) {
+        try {
+          existingProjects = JSON.parse(saved);
+        } catch {
+          existingProjects = [];
+        }
+      }
+
+      // Check if project already exists
+      const existing = existingProjects.find((p: any) => p.name.toLowerCase() === idea.title.toLowerCase());
+      if (existing) {
+        router.push('/projects');
+        return;
+      }
+
+      const newProjectId = `p${Date.now()}`;
+      const newProject = {
+        id: newProjectId,
+        name: idea.title,
+        code: `PRJ-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
+        description: idea.description,
+        status: 'planning',
+        priority: idea.priority || 'medium',
+        start_date: new Date().toISOString().split('T')[0],
+        due_date: new Date(Date.now() + 21 * 86400000).toISOString().split('T')[0],
+        campus: 'Kampus Utama Jakarta',
+        unit: 'Brand & Visual Identity',
+        pm: idea.submitted_by || 'Ahmad Fauzi',
+        progress: 0,
+        image_url: idea.image_url,
+      };
+
+      const updated = [newProject, ...existingProjects];
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(storageKey, JSON.stringify(updated));
+        window.dispatchEvent(new Event('storage'));
+      }
+
+      router.push(`/projects?created_id=${newProjectId}`);
+    } catch (err) {
+      console.error('Failed to convert to project:', err);
+      router.push('/projects');
+    }
   };
 
   return (
@@ -257,14 +309,14 @@ export default function RequestsPage() {
                     <span style={{ fontSize: '12px', color: '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <Check size={14} /> Disetujui
                     </span>
-                    <Link 
-                      href={`/projects?create_from=${encodeURIComponent(idea.title)}&desc=${encodeURIComponent(idea.description)}&img=${encodeURIComponent(idea.image_url || '')}`}
+                    <button 
+                      onClick={() => handleConvertToProject(idea)}
                       className="btn btn-primary"
-                      style={{ fontSize: '11px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      style={{ fontSize: '11px', padding: '5px 12px', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
                     >
-                      <span>Lanjut: Buat Proyek</span>
+                      <span>Lanjut: Jadi Proyek</span>
                       <ArrowRight size={12} />
-                    </Link>
+                    </button>
                   </div>
                 )}
               </div>

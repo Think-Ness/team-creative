@@ -466,173 +466,108 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-            {filteredJobs.map((job) => (
-              <div 
-                key={job.id} 
-                className="card"
-                style={{
-                  borderLeft: `5px solid ${
-                    job.status === 'done' ? '#10b981' : job.status === 'review' ? '#f59e0b' : '#3b82f6'
-                  }`,
-                  padding: 'var(--space-5)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 'var(--space-4)',
-                }}
-              >
-                {/* Header row: Project pill & Status */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ 
-                      backgroundColor: '#f1f5f9', 
-                      color: '#475569', 
-                      fontSize: '11px', 
-                      fontWeight: 700, 
-                      padding: '3px 8px', 
-                      borderRadius: '4px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.3px'
-                    }}>
-                      📁 {job.project}
-                    </span>
-                    <span style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace' }}>
-                      #{job.id}
-                    </span>
-                  </div>
-
-                  <span className={`status-pill ${
-                    job.status === 'done' ? 'status-active' : job.status === 'review' ? 'status-draft' : 'status-archived'
-                  }`} style={{ fontSize: '11px', padding: '3px 10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    {job.status === 'done' ? (
-                      <>
-                        <CheckCircle2 size={12} /> Selesai (Done)
-                      </>
-                    ) : job.status === 'review' ? (
-                      <>
-                        <Clock size={12} /> Dalam Review (QC)
-                      </>
-                    ) : (
-                      <>
-                        <Layers size={12} /> Sedang Dikerjakan
-                      </>
-                    )}
-                  </span>
-                </div>
-
-                {/* Job Title */}
-                <div>
-                  <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)', margin: 0, lineHeight: 1.4 }}>
-                    {job.title}
-                  </h3>
-                </div>
-
-                {/* Structured Metadata Grid */}
-                <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-                  gap: '10px',
-                  backgroundColor: '#f8fafc',
-                  padding: '12px 14px',
-                  borderRadius: 'var(--radius-md)',
-                  border: '1px solid #e2e8f0',
-                  fontSize: '12px'
-                }}>
-                  <div>
-                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>
-                      Peran & Penugasan
-                    </div>
-                    <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginTop: '2px' }}>
-                      {job.role}
-                    </div>
-                    <div style={{ color: '#2563eb', fontSize: '11px', marginTop: '1px' }}>
-                      Divisi {job.division}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>
-                      Kampus Asal
-                    </div>
-                    <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Building2 size={13} color="#64748b" /> {job.campus}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>
-                      Tenggat & Penyelesaian
-                    </div>
-                    <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Calendar size={13} color="#64748b" /> Tenggat: {job.dueDate}
-                    </div>
-                    {job.completedDate && (
-                      <div style={{ color: '#059669', fontSize: '11px', fontWeight: 600, marginTop: '1px' }}>
-                        ✓ Tuntas: {job.completedDate}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Job Notes if present */}
-                {job.notes && (
-                  <div style={{ 
-                    borderLeft: '3px solid #cbd5e1', 
-                    paddingLeft: '12px', 
-                    fontSize: '13px', 
-                    color: '#475569', 
-                    backgroundColor: '#fafbfc', 
-                    padding: '8px 12px',
-                    borderRadius: '0 6px 6px 0' 
-                  }}>
-                    <strong style={{ color: '#334155' }}>Catatan Progres:</strong> {job.notes}
-                  </div>
-                )}
-
-                {/* Footer Action Bar */}
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'flex-end', 
-                  alignItems: 'center', 
-                  gap: '8px', 
-                  flexWrap: 'wrap',
-                  paddingTop: 'var(--space-2)',
-                  borderTop: '1px solid #f1f5f9'
-                }}>
-                  {job.deliverableLink && (
-                    <a
-                      href={job.deliverableLink}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn btn-secondary"
-                      style={{ fontSize: '12px', padding: '6px 14px', display: 'flex', alignItems: 'center', gap: '6px' }}
+          {/* Administrative Table (DESAIN Creative Team.md Section 13 & 20) */}
+          <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <th style={{ padding: '12px 16px' }}>Proyek & Pekerjaan</th>
+                    <th style={{ padding: '12px 16px' }}>Peran & Divisi</th>
+                    <th style={{ padding: '12px 16px' }}>Kampus</th>
+                    <th style={{ padding: '12px 16px' }}>Tenggat / Tuntas</th>
+                    <th style={{ padding: '12px 16px' }}>Status</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'right' }}>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredJobs.map((job) => (
+                    <tr 
+                      key={job.id} 
+                      style={{ 
+                        borderBottom: '1px solid var(--border-color)', 
+                        transition: 'background-color 0.15s ease' 
+                      }}
                     >
-                      <ExternalLink size={13} />
-                      Buka File Kerja di Drive
-                    </a>
-                  )}
-                  <Link
-                    href="/approvals"
-                    className="btn btn-secondary"
-                    style={{ fontSize: '12px', padding: '6px 14px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    Buka di Approvals <ChevronRight size={13} />
-                  </Link>
-                </div>
-              </div>
-            ))}
+                      <td style={{ padding: '14px 16px', maxWidth: '320px' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '3px', lineHeight: 1.4 }}>
+                          {job.title}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                          {job.project} • <code style={{ fontSize: '10px' }}>#{job.id}</code>
+                        </div>
+                        {job.notes && (
+                          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '6px', fontStyle: 'italic', backgroundColor: '#f8fafc', padding: '4px 8px', borderRadius: '4px' }}>
+                            &ldquo;{job.notes}&rdquo;
+                          </div>
+                        )}
+                      </td>
 
-            {filteredJobs.length === 0 && (
-              <div className="card" style={{ textAlign: 'center', padding: 'var(--space-8)' }}>
-                <FolderOpen size={32} color="#94a3b8" style={{ margin: '0 auto 8px auto' }} />
-                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                  Tidak ada pekerjaan dengan filter ini
-                </div>
-                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                  Ganti filter di atas untuk melihat status tugas lainnya.
-                </p>
-              </div>
-            )}
+                      <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{job.role}</div>
+                        <div style={{ fontSize: '11px', color: '#2563eb', marginTop: '2px' }}>
+                          Divisi {job.division}
+                        </div>
+                      </td>
+
+                      <td style={{ padding: '14px 16px', color: '#475569', whiteSpace: 'nowrap' }}>
+                        {job.campus}
+                      </td>
+
+                      <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--text-primary)' }}>
+                          Tenggat: {job.dueDate}
+                        </div>
+                        {job.completedDate && (
+                          <div style={{ fontSize: '11px', color: '#059669', fontWeight: 600, marginTop: '2px' }}>
+                            ✓ Selesai: {job.completedDate}
+                          </div>
+                        )}
+                      </td>
+
+                      <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                        <span className={`status-pill ${
+                          job.status === 'done' ? 'status-active' : job.status === 'review' ? 'status-draft' : 'status-archived'
+                        }`} style={{ fontSize: '11px' }}>
+                          {job.status === 'done' ? 'Done' : job.status === 'review' ? 'Review' : 'In Progress'}
+                        </span>
+                      </td>
+
+                      <td style={{ padding: '14px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                          {job.deliverableLink && (
+                            <a
+                              href={job.deliverableLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="btn btn-secondary"
+                              style={{ fontSize: '11px', padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            >
+                              <ExternalLink size={12} /> Drive
+                            </a>
+                          )}
+                          <Link
+                            href="/approvals"
+                            className="btn btn-secondary"
+                            style={{ fontSize: '11px', padding: '4px 8px' }}
+                          >
+                            Review →
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+
+                  {filteredJobs.length === 0 && (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--text-secondary)' }}>
+                        Tidak ada riwayat pekerjaan dengan filter ini.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

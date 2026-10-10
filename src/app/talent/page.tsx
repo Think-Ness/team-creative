@@ -12,6 +12,7 @@ export default function TalentPage() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
+  const [selectedTalent, setSelectedTalent] = useState<AppUser | null>(null);
 
   const [form, setForm] = useState({
     name: '',
@@ -203,23 +204,34 @@ export default function TalentPage() {
               paddingTop: 'var(--space-3)',
               marginTop: 'auto',
               display: 'flex',
-              justifyContent: 'flex-end',
+              justifyContent: 'space-between',
+              alignItems: 'center',
               gap: 'var(--space-2)'
             }}>
               <button
-                onClick={() => startEdit(m)}
+                onClick={() => setSelectedTalent(m)}
                 className="btn btn-secondary"
-                style={{ fontSize: '11px', padding: '4px 8px' }}
+                style={{ fontSize: '11px', padding: '4px 10px', color: '#2563eb' }}
               >
-                <Edit3 size={12} /> Edit
+                Detail Profil
               </button>
-              <button
-                onClick={() => handleDelete(m.id, m.name)}
-                className="btn btn-secondary"
-                style={{ fontSize: '11px', padding: '4px 8px', color: 'var(--danger-color)' }}
-              >
-                <Trash2 size={12} /> Hapus
-              </button>
+
+              <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                <button
+                  onClick={() => startEdit(m)}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '11px', padding: '4px 8px' }}
+                >
+                  <Edit3 size={12} /> Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(m.id, m.name)}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '11px', padding: '4px 8px', color: 'var(--danger-color)' }}
+                >
+                  <Trash2 size={12} /> Hapus
+                </button>
+              </div>
             </div>
           </div>
         ))}
@@ -323,6 +335,90 @@ export default function TalentPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Talent Profile Modal (DESAIN Creative Team.md Section 20) */}
+      {selectedTalent && (
+        <div className="modal-overlay" onClick={() => setSelectedTalent(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '580px', padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
+                <img 
+                  src={selectedTalent.avatar} 
+                  alt={selectedTalent.name} 
+                  style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border-color)' }}
+                />
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                    <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                      {selectedTalent.name}
+                    </h2>
+                    {getRoleBadge(selectedTalent.role)}
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#2563eb', fontWeight: 600 }}>
+                    Divisi {selectedTalent.division}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    {selectedTalent.campus} • {selectedTalent.email}
+                  </div>
+                </div>
+              </div>
+
+              <button onClick={() => setSelectedTalent(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '70vh', overflowY: 'auto' }}>
+              <div>
+                <span className="metadata-text">TINGKAT SPESIALISASI</span>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '4px' }}>
+                  Advanced Specialist — 6102 Multi-Campus Creative Network
+                </div>
+              </div>
+
+              <div>
+                <span className="metadata-text">KEAHLIAN & SKILLS UTAMA</span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                  <span className="badge" style={{ backgroundColor: '#f1f5f9' }}>Brand Identity</span>
+                  <span className="badge" style={{ backgroundColor: '#f1f5f9' }}>Visual Direction</span>
+                  <span className="badge" style={{ backgroundColor: '#f1f5f9' }}>Editorial Layout</span>
+                  <span className="badge" style={{ backgroundColor: '#f1f5f9' }}>Creative Collaboration</span>
+                  <span className="badge" style={{ backgroundColor: '#f1f5f9' }}>Cross-Campus Production</span>
+                </div>
+              </div>
+
+              <div>
+                <span className="metadata-text">PERALATAN KERJA & GEAR UTAMA</span>
+                <div style={{ fontSize: '13px', color: '#475569', marginTop: '4px', backgroundColor: '#f8fafc', padding: '10px 14px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                  • Workstation: Apple Silicon / High Performance Windows<br />
+                  • Software Master: Figma Professional, Adobe Creative Cloud 2026<br />
+                  • Standar Kualitas: Resolusi Cetak 300 DPI, Asset Vector SVG, Web Optimized
+                </div>
+              </div>
+
+              <div>
+                <span className="metadata-text">STATUS KETERSEDIAAN KOLABORASI</span>
+                <div style={{ fontSize: '13px', color: '#15803d', fontWeight: 600, marginTop: '4px' }}>
+                  ✓ Siap Ditugaskan untuk Proyek Lintas Kampus 6102
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer" style={{ borderTop: '1px solid var(--border-color)', padding: '14px 20px', display: 'flex', justifyContent: 'space-between' }}>
+              <a 
+                href={`mailto:${selectedTalent.email}`} 
+                className="btn btn-secondary"
+                style={{ fontSize: '12px', padding: '6px 14px' }}
+              >
+                Kirim Email Koordinasi
+              </a>
+              <button onClick={() => setSelectedTalent(null)} className="btn btn-primary" style={{ fontSize: '12px', padding: '6px 16px' }}>
+                Tutup
+              </button>
+            </div>
           </div>
         </div>
       )}

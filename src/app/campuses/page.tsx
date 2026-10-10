@@ -55,6 +55,7 @@ export default function CampusesPage() {
   const [campuses, setCampuses] = useState<Campus[]>(INITIAL_CAMPUSES);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCampus, setEditingCampus] = useState<Campus | null>(null);
+  const [selectedCampus, setSelectedCampus] = useState<Campus | null>(null);
 
   const [form, setForm] = useState({ name: '', code: '', city: '' });
 
@@ -141,10 +142,14 @@ export default function CampusesPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                <span className="badge">
-                  {c.units.length} Unit
-                </span>
+              <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
+                <button
+                  onClick={() => setSelectedCampus(c)}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '11px', padding: '3px 8px', color: '#2563eb' }}
+                >
+                  Detail Kampus
+                </button>
                 <button
                   onClick={() => startEdit(c)}
                   className="btn btn-secondary"
@@ -257,6 +262,84 @@ export default function CampusesPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Campus Detail Modal */}
+      {selectedCampus && (
+        <div className="modal-overlay" onClick={() => setSelectedCampus(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <span className="badge" style={{ fontFamily: 'monospace' }}>{selectedCampus.code}</span>
+                  <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                    {selectedCampus.name}
+                  </h2>
+                </div>
+                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <MapPin size={13} /> {selectedCampus.city}
+                </div>
+              </div>
+
+              <button onClick={() => setSelectedCampus(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '70vh', overflowY: 'auto' }}>
+              <div>
+                <span className="metadata-text">PERAN STRATEGIS HUB KAMPUS</span>
+                <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.5, margin: '4px 0 0 0' }}>
+                  Sebagai unit kreatif terdesentralisasi, {selectedCampus.name} bertindak sebagai basis produksi lokal, 
+                  penyedia talenta, dan perpanjangan tangan Creative Management 6102.
+                </p>
+              </div>
+
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span className="metadata-text">UNIT KREATIF SPESIALIS ({selectedCampus.units.length})</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {selectedCampus.units.map((u, i) => (
+                    <div 
+                      key={i} 
+                      style={{ 
+                        padding: '10px 14px', 
+                        backgroundColor: '#f8fafc', 
+                        borderRadius: '6px', 
+                        border: '1px solid #e2e8f0',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{u.name}</div>
+                        <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>PIC Unit: {u.lead}</div>
+                      </div>
+                      <span className="badge" style={{ backgroundColor: '#eff6ff', color: '#1d4ed8' }}>
+                        {u.members} Anggota
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <span className="metadata-text">KEBIJAKAN CENTRALIZED DIRECTION</span>
+                <div style={{ fontSize: '12px', color: '#475569', backgroundColor: '#fafbfc', padding: '10px 12px', borderRadius: '6px', borderLeft: '3px solid #2563eb' }}>
+                  Seluruh karya dari kampus ini harus melewati review kurasi Approvals sebelum dapat ditayangkan di One Official Instagram 6102.
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer" style={{ borderTop: '1px solid var(--border-color)', padding: '14px 20px', display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={() => setSelectedCampus(null)} className="btn btn-primary" style={{ fontSize: '12px', padding: '6px 16px' }}>
+                Tutup Rincian
+              </button>
+            </div>
           </div>
         </div>
       )}

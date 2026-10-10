@@ -121,6 +121,28 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {!isSuperAdmin ? (
+        <div className="card" style={{ padding: 'var(--space-8)', textAlign: 'center', backgroundColor: '#ffffff', border: '1px solid var(--border-color)' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
+            <ShieldCheck size={24} color="#dc2626" />
+          </div>
+          <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
+            Akses Terbatas: Khusus Super Admin
+          </h2>
+          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', maxWidth: '540px', margin: '0 auto 20px auto', lineHeight: 1.5 }}>
+            Pengaturan penyimpanan cloud Folder Majmu&apos; Google Drive, Kredensial Service Account, dan Database Supabase 
+            hanya dapat dikelola oleh pemilik wewenang penuh <strong>Super Admin</strong>.
+          </p>
+          <div style={{ display: 'inline-flex', padding: '6px 14px', backgroundColor: '#f8fafc', borderRadius: '6px', fontSize: '12px', color: '#475569', marginBottom: '20px' }}>
+            Peran Anda saat ini: <strong>{currentUser.role.toUpperCase()}</strong> ({currentUser.name})
+          </div>
+          <div>
+            <Link href="/" className="btn btn-primary" style={{ padding: '8px 20px' }}>
+              Kembali ke Dashboard
+            </Link>
+          </div>
+        </div>
+      ) : (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
         
         {/* 1. Google Drive Master: Folder Majmu' 6102 & Service Account */}
@@ -516,25 +538,25 @@ export default function SettingsPage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-3)', fontSize: '12px' }}>
             <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-              <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>🏛️ Kampus Utama Jakarta</div>
+              <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Kampus Utama Jakarta</div>
               <div style={{ color: '#64748b', marginTop: '2px' }}>PIC: Budi Santoso (Admin Kampus)</div>
               <div style={{ color: '#2563eb', fontWeight: 500, marginTop: '2px' }}>Fokus: Creative Management & Graphic</div>
             </div>
 
             <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-              <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>🏛️ Kampus Bandung Hub</div>
+              <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Kampus Bandung Hub</div>
               <div style={{ color: '#64748b', marginTop: '2px' }}>PIC: Siti Rahma (Admin Kampus)</div>
               <div style={{ color: '#2563eb', fontWeight: 500, marginTop: '2px' }}>Fokus: Film Production & Sinematografi</div>
             </div>
 
             <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-              <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>🏛️ Kampus Surabaya Studio</div>
+              <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Kampus Surabaya Studio</div>
               <div style={{ color: '#64748b', marginTop: '2px' }}>PIC: Hendra Wijaya (Admin Kampus)</div>
               <div style={{ color: '#2563eb', fontWeight: 500, marginTop: '2px' }}>Fokus: Copywriting & Content Narrative</div>
             </div>
 
             <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-              <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>🏛️ Kampus Yogyakarta Creative</div>
+              <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Kampus Yogyakarta Creative</div>
               <div style={{ color: '#64748b', marginTop: '2px' }}>PIC: Dewi Lestari (Admin Kampus)</div>
               <div style={{ color: '#2563eb', fontWeight: 500, marginTop: '2px' }}>Fokus: Music Production & Audio Design</div>
             </div>
@@ -542,6 +564,7 @@ export default function SettingsPage() {
         </div>
 
       </div>
+      )}
     </div>
   );
 }

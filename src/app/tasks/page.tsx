@@ -79,6 +79,8 @@ const COLUMNS: { key: Task['status']; label: string }[] = [
 
 export default function TasksPage() {
   const { data: tasks, addItem, updateItem, deleteItem } = usePersistentData<Task>('tasks', initialTasks);
+  const { data: projects } = usePersistentData<any>('projects', []);
+  const [projectFilter, setProjectFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
@@ -91,6 +93,12 @@ export default function TasksPage() {
     due_date: '',
     assignee: 'Budi Wicaksono',
     image_url: '',
+  });
+
+  const filteredTasks = tasks.filter((t) => {
+    if (projectFilter === 'all') return true;
+    if (projectFilter === 'non_project') return !t.project || t.project === 'Tugas Umum';
+    return t.project === projectFilter;
   });
 
   const moveStatus = (id: string, nextStatus: Task['status']) => {
@@ -191,10 +199,38 @@ export default function TasksPage() {
         </button>
       </div>
 
+      {/* Project Filter Pills */}
+      <div className="filter-pills" style={{ marginBottom: 'var(--space-4)', flexWrap: 'wrap' }}>
+        <button
+          className={`filter-pill ${projectFilter === 'all' ? 'active' : ''}`}
+          onClick={() => setProjectFilter('all')}
+        >
+          Semua Proyek ({tasks.length})
+        </button>
+        {projects.map((p: any) => {
+          const count = tasks.filter(t => t.project === p.name).length;
+          return (
+            <button
+              key={p.id}
+              className={`filter-pill ${projectFilter === p.name ? 'active' : ''}`}
+              onClick={() => setProjectFilter(p.name)}
+            >
+              {p.name} ({count})
+            </button>
+          );
+        })}
+        <button
+          className={`filter-pill ${projectFilter === 'non_project' ? 'active' : ''}`}
+          onClick={() => setProjectFilter('non_project')}
+        >
+          Tugas Umum / Non-Project ({tasks.filter(t => !t.project || t.project === 'Tugas Umum').length})
+        </button>
+      </div>
+
       {/* Kanban Board */}
       <div className="kanban-board">
         {COLUMNS.map((col) => {
-          const colTasks = tasks.filter(t => t.status === col.key);
+          const colTasks = filteredTasks.filter(t => t.status === col.key);
           return (
             <div key={col.key} className="kanban-col">
               <div className="kanban-col-header">
@@ -204,9 +240,9 @@ export default function TasksPage() {
 
               {colTasks.map((t) => (
                 <div key={t.id} className="kanban-card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                      {t.project}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '11px', color: '#1d4ed8', backgroundColor: '#eff6ff', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                      {t.project || 'Tugas Umum'}
                     </span>
                     <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                       <span className="badge" style={{ fontSize: '10px', textTransform: 'uppercase' }}>
@@ -312,6 +348,22 @@ export default function TasksPage() {
                     value={form.title}
                     onChange={(e) => setForm({ ...form, title: e.target.value })}
                   />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Terkait Proyek</label>
+                  <select
+                    className="form-input"
+                    value={form.project}
+                    onChange={(e) => setForm({ ...form, project: e.target.value })}
+                  >
+                    <option value="Tugas Umum">Tugas Umum (Tanpa Proyek)</option>
+                    {projects.map((p: any) => (
+                      <option key={p.id} value={p.name}>
+                        {p.name} ({p.code})
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="form-group">

@@ -17,9 +17,26 @@ import {
 export default function Sidebar() {
   return (
     <aside className="sidebar">
-      <div style={{ padding: 'var(--space-4) var(--space-6)', borderBottom: '1px solid var(--border-color)', fontWeight: 600 }}>
-        6102 CREATIVE
-      </div>
+      <Link 
+        href="/" 
+        style={{ 
+          padding: 'var(--space-4) var(--space-6)', 
+          borderBottom: '1px solid var(--border-color)', 
+          fontWeight: 700, 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '8px', 
+          textDecoration: 'none', 
+          color: 'var(--text-primary)',
+          letterSpacing: '0.5px' 
+        }}
+        title="Kembali ke Dashboard Utama"
+      >
+        <span style={{ backgroundColor: '#0f172a', color: '#ffffff', fontSize: '11px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px' }}>
+          6102
+        </span>
+        <span>CREATIVE SYSTEM</span>
+      </Link>
       <div style={{ padding: 'var(--space-4) 0', flex: 1, overflowY: 'auto' }}>
         <div className="nav-section" style={{ marginBottom: 'var(--space-3)' }}>
           <Link href="/" className="nav-item" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-2) var(--space-6)', color: 'var(--text-primary)', fontWeight: 600 }}>

@@ -28,7 +28,9 @@ export default function Topbar() {
   return (
     <header className="topbar" style={{ justifyContent: 'space-between', position: 'relative' }}>
       <div className="breadcrumbs" style={{ fontSize: '14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span>6102 Network</span>
+        <Link href="/" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 600 }}>
+          Dashboard
+        </Link>
         <span>/</span>
         <span suppressHydrationWarning style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{currentUser.campus}</span>
       </div>

@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
+import { usePersistentData } from '@/lib/usePersistentData';
 import { 
   FolderOpen, 
   CheckSquare, 
@@ -12,10 +14,23 @@ import {
   Lightbulb,
   Calendar,
   Layers,
-  TrendingUp
+  TrendingUp,
+  User,
+  ArrowRight
 } from 'lucide-react';
 
 export default function Dashboard() {
+  const { currentUser } = useAuth();
+  const { data: tasks } = usePersistentData<any>('tasks', []);
+  const { data: projects } = usePersistentData<any>('projects', []);
+
+  // Filter tasks assigned to current user
+  const myTasks = tasks.filter((t: any) => 
+    t.assignee && (
+      t.assignee.toLowerCase().includes(currentUser.name.toLowerCase()) ||
+      currentUser.name.toLowerCase().includes(t.assignee.toLowerCase())
+    )
+  );
   const [stats] = useState({
     activeProjects: 3,
     pendingRequests: 4,
@@ -169,6 +184,99 @@ export default function Dashboard() {
             Membutuhkan sign-off Creative Lead
           </div>
         </div>
+      </div>
+
+      {/* My Assigned Tasks Section (DESAIN Creative Team.md Section 12) */}
+      <div className="card" style={{ marginBottom: 'var(--space-6)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CheckSquare size={18} color="var(--accent-primary)" />
+              <h3 className="section-title" style={{ margin: 0 }}>
+                Tugas Saya Saat Ini
+              </h3>
+              <span className="badge" style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', fontWeight: 600 }}>
+                {myTasks.length} Tugas
+              </span>
+            </div>
+            <p className="metadata-text" style={{ marginTop: '2px' }}>
+              Daftar penugasan aktif khusus untuk <strong>{currentUser.name}</strong> ({currentUser.division})
+            </p>
+          </div>
+
+          <Link href="/tasks" className="btn btn-secondary" style={{ fontSize: '12px', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>Buka Papan Tasks</span>
+            <ArrowRight size={13} />
+          </Link>
+        </div>
+
+        {myTasks.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {myTasks.map((t: any) => (
+              <div 
+                key={t.id} 
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '12px 14px',
+                  borderRadius: 'var(--radius-sm)',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  gap: '12px',
+                  flexWrap: 'wrap'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: '260px', flex: 1 }}>
+                  <span className={`status-pill ${
+                    t.status === 'done' ? 'status-active' : t.status === 'review' ? 'status-draft' : 'status-archived'
+                  }`} style={{ fontSize: '10px', textTransform: 'uppercase', padding: '2px 8px' }}>
+                    {t.status.replace('_', ' ')}
+                  </span>
+                  <div>
+                    <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+                      {t.title}
+                    </h4>
+                    <span style={{ fontSize: '11px', color: '#64748b' }}>
+                      Proyek: <strong>{t.project || 'Tugas Umum'}</strong>
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px' }}>
+                  <span style={{ color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Clock size={12} /> Tenggat: <strong>{t.due_date || '-'}</strong>
+                  </span>
+                  <span className="badge" style={{ textTransform: 'uppercase', fontSize: '10px' }}>
+                    {t.priority}
+                  </span>
+                  <Link 
+                    href="/tasks" 
+                    className="btn btn-secondary"
+                    style={{ fontSize: '11px', padding: '4px 10px' }}
+                  >
+                    Detail →
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ 
+            padding: 'var(--space-6)', 
+            textAlign: 'center', 
+            backgroundColor: '#f8fafc', 
+            borderRadius: 'var(--radius-sm)',
+            border: '1px dashed #cbd5e1'
+          }}>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 8px 0' }}>
+              Tidak ada tugas aktif yang dialokasikan langsung ke akun Anda saat ini.
+            </p>
+            <Link href="/tasks" className="btn btn-secondary" style={{ fontSize: '12px', padding: '6px 14px' }}>
+              Lihat Seluruh Tugas Tim di Kanban Board
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* 2-Column Section: Active Projects & Activity */}

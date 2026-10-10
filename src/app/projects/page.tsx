@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, FolderOpen, Calendar, User, Edit3, Trash2, X, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
+import { Plus, FolderOpen, Calendar, User, Edit3, Trash2, X, ExternalLink, CheckSquare, ArrowRight } from 'lucide-react';
 import { usePersistentData } from '@/lib/usePersistentData';
 import DriveImageUploader from '@/components/common/DriveImageUploader';
 
@@ -68,9 +69,25 @@ const initialProjects: Project[] = [
 
 export default function ProjectsPage() {
   const { data: projects, addItem, updateItem, deleteItem } = usePersistentData<Project>('projects', initialProjects);
+  const { data: tasks } = usePersistentData<any>('tasks', []);
   const [filter, setFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+
+  const getProjectTaskStats = (projectName: string, fallbackProgress: number) => {
+    const projectTasks = tasks.filter(t => 
+      t.project && (
+        t.project.toLowerCase() === projectName.toLowerCase() ||
+        projectName.toLowerCase().includes(t.project.toLowerCase())
+      )
+    );
+    if (projectTasks.length === 0) {
+      return { total: 0, done: 0, progress: fallbackProgress };
+    }
+    const done = projectTasks.filter(t => t.status === 'done').length;
+    const progress = Math.round((done / projectTasks.length) * 100);
+    return { total: projectTasks.length, done, progress };
+  };
 
   const [form, setForm] = useState({
     name: '',
@@ -242,53 +259,70 @@ export default function ProjectsPage() {
               </p>
             </div>
 
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                <span>Progres</span>
-                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{p.progress}%</span>
-              </div>
-              <div className="progress-bar" style={{ marginBottom: 'var(--space-4)' }}>
-                <div className="progress-fill" style={{ width: `${p.progress}%` }}></div>
-              </div>
+            {(() => {
+              const taskStats = getProjectTaskStats(p.name, p.progress);
+              return (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    <span>
+                      Progres {taskStats.total > 0 ? `(${taskStats.done}/${taskStats.total} Task Selesai)` : '(Manual)'}
+                    </span>
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{taskStats.progress}%</span>
+                  </div>
+                  <div className="progress-bar" style={{ marginBottom: 'var(--space-4)' }}>
+                    <div className="progress-fill" style={{ width: `${taskStats.progress}%` }}></div>
+                  </div>
 
-              <div style={{ 
-                borderTop: '1px solid var(--border-color)', 
-                paddingTop: 'var(--space-3)', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                gap: 'var(--space-1)',
-                fontSize: '12px',
-                color: 'var(--text-secondary)',
-                marginBottom: 'var(--space-3)'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Unit: {p.unit}</span>
-                  <span>PM: {p.pm}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Kampus: {p.campus}</span>
-                  <span>Tenggat: {p.due_date}</span>
-                </div>
-              </div>
+                  <div style={{ 
+                    borderTop: '1px solid var(--border-color)', 
+                    paddingTop: 'var(--space-3)', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: 'var(--space-1)',
+                    fontSize: '12px',
+                    color: 'var(--text-secondary)',
+                    marginBottom: 'var(--space-3)'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Unit: {p.unit}</span>
+                      <span>PM: {p.pm}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Kampus: {p.campus}</span>
+                      <span>Tenggat: {p.due_date}</span>
+                    </div>
+                  </div>
 
-              {/* Edit & Delete Action Buttons */}
-              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 'var(--space-2)', display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)' }}>
-                <button
-                  onClick={() => startEdit(p)}
-                  className="btn btn-secondary"
-                  style={{ fontSize: '11px', padding: '4px 8px' }}
-                >
-                  <Edit3 size={12} /> Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(p.id, p.name)}
-                  className="btn btn-secondary"
-                  style={{ fontSize: '11px', padding: '4px 8px', color: 'var(--danger-color)' }}
-                >
-                  <Trash2 size={12} /> Hapus
-                </button>
-              </div>
-            </div>
+                  {/* Actions Bar */}
+                  <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 'var(--space-2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Link
+                      href={`/tasks?project=${encodeURIComponent(p.name)}`}
+                      className="btn btn-secondary"
+                      style={{ fontSize: '11px', padding: '4px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <CheckSquare size={12} /> Buka Tasks ({taskStats.total})
+                    </Link>
+
+                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                      <button
+                        onClick={() => startEdit(p)}
+                        className="btn btn-secondary"
+                        style={{ fontSize: '11px', padding: '4px 8px' }}
+                      >
+                        <Edit3 size={12} /> Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(p.id, p.name)}
+                        className="btn btn-secondary"
+                        style={{ fontSize: '11px', padding: '4px 8px', color: 'var(--danger-color)' }}
+                      >
+                        <Trash2 size={12} /> Hapus
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         ))}
       </div>
